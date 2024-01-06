@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod config;
+pub mod scan;
 pub mod utils;
 
 use crate::commands::arg_tokenizer;
@@ -7,6 +8,8 @@ use crate::config::{
     add_value_to_setting, create_config_file, get_setting_from_config, remove_value_from_setting,
     ConfigOption,
 };
+use crate::scan::scan;
+use crate::utils::get_current_directory_path;
 use std::env;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -68,21 +71,21 @@ fn main() {
         Command::RemoveFile(file) => {
             remove_value_from_setting(ConfigOption::IgnoredFiles, file, &os)
         }
-        _ => (),
+        Command::Scan => {
+            let current_dir_path = get_current_directory_path();
+            let tree = scan(&current_dir_path, &os);
+            println!("{:?}", tree);
+        }
+        Command::ScanPath(path) => {
+            let tree = scan(&path, &os);
+            println!("{:?}", tree);
+        }
     }
 }
 
 fn recreate_config_file(os: &OS) {
     create_config_file(&os, true);
     println!("reset config file");
-}
-
-fn exit_with_error(error: &str, show_help: bool) {
-    println!("{}", error);
-    if show_help {
-        println!("use -h for a list of all commands");
-    }
-    std::process::exit(0);
 }
 
 fn print_version() {

@@ -1,12 +1,13 @@
-use crate::{exit_with_error, Command};
+use crate::utils::exit_with_error;
+use crate::Command;
 
 pub fn arg_tokenizer(mut args: Vec<String>) -> Command {
-    // removes target/debug/fmap 
+    // removes target/debug/fmap
     args.remove(0);
 
     if args.is_empty() {
         println!("scan");
-        return Command::Scan
+        return Command::Scan;
     }
 
     match args[0].as_str() {

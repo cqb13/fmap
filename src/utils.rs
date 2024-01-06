@@ -1,3 +1,5 @@
+use std::env;
+
 #[derive(Debug, PartialEq)]
 pub enum Object {
     Directory,
@@ -27,4 +29,21 @@ pub fn is_valid_name(name: &str, object: Object) -> bool {
     }
 
     true
+}
+
+pub fn get_current_directory_path() -> String {
+    let current_dir_path = match env::current_dir() {
+        Ok(path) => path,
+        Err(_) => panic!("Could not get current directory path"),
+    };
+
+    current_dir_path.to_str().unwrap().to_string()
+}
+
+pub fn exit_with_error(error: &str, show_help: bool) {
+    println!("{}", error);
+    if show_help {
+        println!("use -h for a list of all commands");
+    }
+    std::process::exit(0);
 }

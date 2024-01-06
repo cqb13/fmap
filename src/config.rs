@@ -1,10 +1,23 @@
-use crate::utils::{is_valid_name, Object};
-use crate::{exit_with_error, OS};
+use crate::utils::{exit_with_error, is_valid_name, Object};
+use crate::OS;
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 
 pub const CONFIG_FILE: &str = ".fmap_config";
-const DEFAULT_IGNORED_DIRECTORIES: [&str; 5] = ["node_modules", "target", "dist", "venv", ".git"];
+const DEFAULT_IGNORED_DIRECTORIES: [&str; 12] = [
+    ".gradle",
+    ".idea",
+    "node_modules",
+    "target",
+    "build",
+    "dist",
+    "venv",
+    ".git",
+    ".vscode",
+    ".settings",
+    ".next",
+    ".bin",
+];
 const DEFAULT_IGNORED_FILES: [&str; 0] = [];
 
 pub enum ConfigOption {
