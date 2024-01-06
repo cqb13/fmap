@@ -6,7 +6,6 @@ pub fn arg_tokenizer(mut args: Vec<String>) -> Command {
     args.remove(0);
 
     if args.is_empty() {
-        println!("scan");
         return Command::Scan;
     }
 

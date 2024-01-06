@@ -2,6 +2,7 @@ pub mod commands;
 pub mod config;
 pub mod scan;
 pub mod utils;
+pub mod display;
 
 use crate::commands::arg_tokenizer;
 use crate::config::{
@@ -11,6 +12,7 @@ use crate::config::{
 use crate::scan::scan;
 use crate::utils::get_current_directory_path;
 use std::env;
+use crate::display::display_tree;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -74,11 +76,13 @@ fn main() {
         Command::Scan => {
             let current_dir_path = get_current_directory_path();
             let tree = scan(&current_dir_path, &os);
-            println!("{:?}", tree);
+            println!("{}", tree.name);
+            display_tree(&tree, 0, "");
         }
         Command::ScanPath(path) => {
             let tree = scan(&path, &os);
-            println!("{:?}", tree);
+            println!("{}", tree.name);
+            display_tree(&tree, 0, "");
         }
     }
 }
