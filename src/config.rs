@@ -1,20 +1,41 @@
-use crate::OS;
-use std::fs::File;
+use crate::{exit_with_error, OS};
+use std::fs::{read_to_string, File};
 use std::io::prelude::*;
 
 pub const CONFIG_FILE: &str = ".fmap_config";
+const DEFAULT_IGNORED_DIRECTORIES: [&str; 5] = ["node_modules", "target", "dist", "venv", ".git"];
+const DEFAULT_IGNORED_FILES: [&str; 0] = [];
 
-pub fn create_config_file(os: OS) {
-    match os {
-        OS::Windows => create_config_file_for_windows(),
-        OS::Mac => create_config_file_for_mac(),
-        OS::Other => panic!("Unsupported OS"),
+pub enum ConfigOption {
+    IgnoredDirectories,
+    IgnoredFiles,
+}
+
+impl ConfigOption {
+    pub fn get_config_option_key(&self) -> String {
+        match self {
+            Self::IgnoredDirectories => "ignored-directories".to_string(),
+            Self::IgnoredFiles => "ignored-files".to_string(),
+        }
     }
 }
 
-fn create_config_file_for_windows() {
-    let home_dir = std::env::var("USERPROFILE").unwrap();
-    let config_file_path = format!("{}/{}", home_dir, CONFIG_FILE);
+pub struct Setting {
+    pub key: String,
+    pub value: String,
+}
+
+impl Setting {
+    pub fn new(key: String, value: String) -> Self {
+        Self { key, value }
+    }
+}
+
+pub fn create_config_file(os: &OS, force: bool) {
+    let config_file_path = get_config_path(os);
+    if path_exists(&config_file_path) && !force {
+        return;
+    }
     let config_file = File::create(config_file_path).unwrap();
     let result = write_default_config_to_file(config_file);
     match result {
@@ -23,18 +44,7 @@ fn create_config_file_for_windows() {
     }
 }
 
-fn create_config_file_for_mac() {
-    let home_dir = std::env::var("HOME").unwrap();
-    let config_file_path = format!("{}/{}", home_dir, CONFIG_FILE);
-    let config_file = File::create(config_file_path).unwrap();
-    let result = write_default_config_to_file(config_file);
-    match result {
-        Ok(()) => (),
-        Err(e) => panic!("Error creating config file: {}", e),
-    }
-}
-
-fn write_default_config_to_file(mut file: File) -> std::io::Result<()> {
+fn write_default_config_to_file(mut config_file: File) -> std::io::Result<()> {
     /*
      * format:
      * - data in sets of two by line
@@ -42,13 +52,62 @@ fn write_default_config_to_file(mut file: File) -> std::io::Result<()> {
      *  - line 2: value
      */
 
-    let default_ignored_directories = vec!["node_modules", "target", "dist", "venv", ".git"];
-    // write test in the file
-    file.write_all(b"ignored-directories\n")?;
-    for directory in default_ignored_directories {
-        file.write_all(format!("{},", directory).as_bytes()).unwrap();
+    config_file.write_all(b"ignored-directories\n")?;
+    let mut value_line = String::new();
+    for directory in DEFAULT_IGNORED_DIRECTORIES {
+        value_line.push_str(format!("{},", directory).as_str());
     }
+    value_line.pop();
+    config_file.write_all(value_line.as_bytes())?;
+
+    value_line.clear();
+
+    config_file.write_all(b"\nignored-files\n")?;
+    for file in DEFAULT_IGNORED_FILES {
+        value_line.push_str(format!("{},", file).as_str());
+    }
+    value_line.pop();
+    config_file.write_all(value_line.as_bytes())?;
 
     Ok(())
 }
 
+pub fn get_setting_from_config(config_option: ConfigOption, os: &OS) -> Setting {
+    let config_file_path = get_config_path(os);
+    if !path_exists(&config_file_path) {
+        exit_with_error(
+            "failed to find config, use the -c arg to make a new one",
+            true,
+        )
+    }
+    let key = config_option.get_config_option_key();
+
+    for (index, line) in read_to_string(&config_file_path)
+        .unwrap()
+        .lines()
+        .enumerate()
+    {
+        if index % 2 != 1 && line == key {
+            let config_content = read_to_string(&config_file_path).unwrap();
+            let value_line = config_content.lines().nth(index + 1).unwrap_or("None");
+            return Setting::new(key, value_line.to_string());
+        }
+    }
+
+    exit_with_error("failed to find config option", true);
+    // will never reach this
+    Setting::new("".to_string(), "".to_string())
+}
+
+fn get_config_path(os: &OS) -> String {
+    let user_dir = match os {
+        OS::Windows => "USERPROFILE",
+        OS::Mac => "HOME",
+    };
+    let home_dir = std::env::var(format!("{}", user_dir)).unwrap();
+    format!("{}/{}", home_dir, CONFIG_FILE)
+}
+
+fn path_exists(path: &String) -> bool {
+    std::path::Path::new(&path).exists()
+}
