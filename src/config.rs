@@ -2,19 +2,30 @@ use crate::OS;
 use std::fs::File;
 use std::io::prelude::*;
 
-pub const WINDOWS_CONFIG_FILE: &str = ".fmap_config";
+pub const CONFIG_FILE: &str = ".fmap_config";
 
 pub fn create_config_file(os: OS) {
     match os {
         OS::Windows => create_config_file_for_windows(),
-        OS::Mac => println!("Creating config file for Mac"),
+        OS::Mac => create_config_file_for_mac(),
         OS::Other => panic!("Unsupported OS"),
     }
 }
 
 fn create_config_file_for_windows() {
     let home_dir = std::env::var("USERPROFILE").unwrap();
-    let config_file_path = format!("{}/{}", home_dir, WINDOWS_CONFIG_FILE);
+    let config_file_path = format!("{}/{}", home_dir, CONFIG_FILE);
+    let config_file = File::create(config_file_path).unwrap();
+    let result = write_default_config_to_file(config_file);
+    match result {
+        Ok(()) => (),
+        Err(e) => panic!("Error creating config file: {}", e),
+    }
+}
+
+fn create_config_file_for_mac() {
+    let home_dir = std::env::var("HOME").unwrap();
+    let config_file_path = format!("{}/{}", home_dir, CONFIG_FILE);
     let config_file = File::create(config_file_path).unwrap();
     let result = write_default_config_to_file(config_file);
     match result {
