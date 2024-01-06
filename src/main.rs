@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod config;
+pub mod utils;
 
 use crate::commands::arg_tokenizer;
 use crate::config::{

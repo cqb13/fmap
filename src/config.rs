@@ -1,3 +1,4 @@
+use crate::utils::{is_valid_name, Object};
 use crate::{exit_with_error, OS};
 use std::fs::{read_to_string, File};
 use std::io::prelude::*;
@@ -105,6 +106,18 @@ pub fn get_setting_from_config(config_option: ConfigOption, os: &OS) -> Setting 
 }
 
 pub fn remove_value_from_setting(config_option: ConfigOption, value_setting: String, os: &OS) {
+    let object_type = match config_option {
+        ConfigOption::IgnoredDirectories => Object::Directory,
+        ConfigOption::IgnoredFiles => Object::File,
+    };
+
+    if !is_valid_name(&value_setting, object_type) {
+        exit_with_error(
+            format!("{} is not a valid name", value_setting).as_str(),
+            false,
+        );
+    }
+
     let setting = get_setting_from_config(config_option, os);
 
     let mut value = setting.value;
@@ -123,6 +136,18 @@ pub fn remove_value_from_setting(config_option: ConfigOption, value_setting: Str
 }
 
 pub fn add_value_to_setting(config_option: ConfigOption, value_setting: String, os: &OS) {
+    let object_type = match config_option {
+        ConfigOption::IgnoredDirectories => Object::Directory,
+        ConfigOption::IgnoredFiles => Object::File,
+    };
+
+    if !is_valid_name(&value_setting, object_type) {
+        exit_with_error(
+            format!("{} is not a valid name", value_setting).as_str(),
+            false,
+        );
+    }
+
     let setting = get_setting_from_config(config_option, os);
 
     let mut value = setting.value;
