@@ -2,7 +2,10 @@ pub mod commands;
 pub mod config;
 
 use crate::commands::arg_tokenizer;
-use crate::config::{create_config_file, get_setting_from_config, ConfigOption};
+use crate::config::{
+    add_value_to_setting, create_config_file, get_setting_from_config, remove_value_from_setting,
+    ConfigOption,
+};
 use std::env;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -26,19 +29,6 @@ pub enum Command {
     Version,
     Help,
 }
-
-/**
- * Args:
- * -c: creates a new config file
- * -add -dir/-file "directory/file name": adds a directory or file to respective list
- * -rmv -dir/-file "directory/file name": removes a directory or file from respective list
- * -ls -dir/-file: lists all directories or files in respective list
- * -v: version
- * -h: help
- * -p: "path": a custom relative path to use instead of current directory
- *
- * nothing: scans from current directory
- */
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -67,6 +57,16 @@ fn main() {
             "Ignored Files:\n{}",
             get_setting_from_config(ConfigOption::IgnoredFiles, &os).value
         ),
+        Command::AddDirectory(dir) => {
+            add_value_to_setting(ConfigOption::IgnoredDirectories, dir, &os)
+        }
+        Command::AddFile(file) => add_value_to_setting(ConfigOption::IgnoredFiles, file, &os),
+        Command::RemoveDirectory(dir) => {
+            remove_value_from_setting(ConfigOption::IgnoredDirectories, dir, &os)
+        }
+        Command::RemoveFile(file) => {
+            remove_value_from_setting(ConfigOption::IgnoredFiles, file, &os)
+        }
         _ => (),
     }
 }
@@ -95,15 +95,17 @@ fn print_help() {
     println!("");
     println!("Commands:");
     println!("fmap: scans from current directory");
-    println!("fmap -p: \"path\": a custom relative path to use instead of current directory");
-    println!("fmap -c: creates a new config file, overwriting the old one if it exists");
+    println!("-p: \"path\": a custom relative path to use instead of current directory");
+    println!("-c: creates a new config file, overwriting the old one if it exists");
     println!(
-        "fmap -add -dir/-file \"directory/file name\": adds a directory or file to respective list"
+        "-add -dir/-file \"directory/file name\": adds a directory or file to respective list"
     );
-    println!("fmap -rmv -dir/-file \"directory/file name\": removes a directory or file from respective list");
-    println!("fmap -ls -dir/-file: lists all directories or files in respective list");
-    println!("fmap -v: version");
-    println!("fmap -h: help");
+    println!(
+        "-rmv -dir/-file \"directory/file name\": removes a directory or file from respective list"
+    );
+    println!("-ls -dir/-file: lists all directories or files in respective list");
+    println!("-v: version");
+    println!("-h: help");
     println!("");
     println!("https://github.com/cqb13/fmap");
 }
