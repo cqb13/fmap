@@ -2,7 +2,14 @@
 name = "fmap"
 version = "0.1.1"
 edition = "2021"
-
+authors = ["cqb13 <cqb13.dev@gmail.com>"]
+license = "MIT"
+description = "A CLI tool for displaying a tree like view of files and directories."
+readme = "README.md"
+homepage = "https://github.com/cqb13/fmap"
+repository = "https://github.com/cqb13/fmap"
+keywords = ["cli", "file-tree", "folder-tree"]
+categories = ["command-line-utilities"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
