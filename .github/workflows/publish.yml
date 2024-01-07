@@ -1,4 +1,4 @@
-name: Release
+name: publish
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  rust-release:
+  publish:
     name: ${{ matrix.name }}
 
     runs-on: ${{ matrix.os }}
@@ -74,6 +74,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          release_name: fmap ${{ steps.get_version.outputs.version }}
+          release_name: fmap ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
           file_glob: true
           file: target/*/release/fmap-${{ steps.get_version.outputs.version }}-*.{zip,tar.gz}
