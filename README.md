@@ -10,36 +10,67 @@ Fmap is a command-line tool written in Rust for displaying a tree-like view of f
 - Add, remove, and list ignored directories and files.
 - Cross-platform support for Windows and macOS.
 
-## Usage
+## Commands
 
-### Basic Usage
+The following commands are available for use with Fmap:
 
-```bash
-fmap              # Scans from the current directory
-```
+- **Basic Usage:**
 
-### Options
+  ```bash
+  fmap              # Scans from the current directory
+  ```
 
-- `-p "path"`: Specify a custom relative path to scan instead of the current directory.
-- `-c`: Create a new config file, overwriting the old one if it exists.
-- `-add -dir/-file "directory/file name"`: Add a directory or file to the respective list.
-- `-rmv -dir/-file "directory/file name"`: Remove a directory or file from the respective list.
-- `-ls -dir/-file`: List all directories or files in the respective list.
-- `-v`: Display the version.
-- `-h`: Show help.
+- **Commands:**
+
+  ```bash
+  # Scan Commands
+  fmap                    # Scans from the current directory
+  fmap -s                # Scans with default options
+  fmap -s -e -fs -ds -fc  # Scans with optional features: show file endings, file sizes, directory sizes, and file counts in directories
+  fmap -sp "path"        # Scans from a custom relative path
+
+  # Configuration Commands
+  fmap -c                # Creates/reset the configuration file
+
+  # Ignored Directories and Files Commands
+  fmap -add -dir "directory"  # Adds a directory to the ignored list
+  fmap -add -file "filename"  # Adds a file to the ignored list
+  fmap -rmv -dir "directory"  # Removes a directory from the ignored list
+  fmap -rmv -file "filename"  # Removes a file from the ignored list
+  fmap -ls -dir             # Lists all ignored directories
+  fmap -ls -file            # Lists all ignored files
+
+  # Other Commands
+  fmap -v                # Prints the version
+  fmap -h                # Prints the help
+  ```
+
+**Note:** Replace "path," "directory," and "filename" with your desired paths, directories, and filenames. You can customize the scan options with flags such as `-e` for file endings, `-fs` for file sizes, `-ds` for directory sizes, and `-fc` for file counts in directories.
 
 ## Example Output
 
+### Command
+
+```bash
+fmap scan -e -fc
+```
+
+### Output
+
 ```bash
 fmap
-└── LICENSE
-└── Cargo.toml
-└── Cargo.lock
-└── .gitignore
-└── src
-    └── config.rs
-    └── commands.rs
-    └── main.rs
+├── Cargo.toml
+├── LICENSE
+├── Cargo.lock
+├── README.md
+├── .gitignore
+└── src (6)
+    ├── display.rs
+    ├── config.rs
+    ├── commands.rs
+    ├── main.rs
+    ├── scan.rs
+    └── utils.rs
 ```
 
 ## Website

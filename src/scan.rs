@@ -10,6 +10,7 @@ pub struct DirectoryObject {
     pub name: String,
     pub path: String,
     pub size: u64,
+    pub size_string: String,
     pub file_count: u64,
 }
 
@@ -21,6 +22,7 @@ impl DirectoryObject {
             name: name.to_string(),
             path: path.to_string(),
             size: 0,
+            size_string: String::new(),
             file_count: 0,
         }
     }
@@ -41,6 +43,7 @@ pub struct FileObject {
     pub ending: String,
     pub path: String,
     pub size: u64,
+    pub size_string: String,
 }
 
 impl FileObject {
@@ -57,6 +60,7 @@ impl FileObject {
             ending,
             path,
             size,
+            size_string: bytes_to_best_size(size),
         }
     }
 }
@@ -141,6 +145,7 @@ fn create_tree(
 
     tree.file_count = file_count;
     tree.size = total_size;
+    tree.size_string = bytes_to_best_size(total_size);
 
     while !directory_stack.is_empty() {
         let current_dir_path = directory_stack.pop().unwrap();
@@ -151,4 +156,31 @@ fn create_tree(
     }
 
     tree
+}
+
+fn bytes_to_best_size(bytes: u64) -> String {
+    let mut size = bytes as f64;
+    let mut unit = "B";
+
+    if size > 1024.0 {
+        size /= 1024.0;
+        unit = "KB";
+    }
+
+    if size > 1024.0 {
+        size /= 1024.0;
+        unit = "MB";
+    }
+
+    if size > 1024.0 {
+        size /= 1024.0;
+        unit = "GB";
+    }
+
+    if size > 1024.0 {
+        size /= 1024.0;
+        unit = "TB";
+    }
+
+    format!("{:.2} {}", size, unit)
 }

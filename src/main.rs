@@ -1,18 +1,18 @@
 pub mod commands;
 pub mod config;
+pub mod display;
 pub mod scan;
 pub mod utils;
-pub mod display;
 
 use crate::commands::arg_tokenizer;
 use crate::config::{
     add_value_to_setting, create_config_file, get_setting_from_config, remove_value_from_setting,
     ConfigOption,
 };
+use crate::display::display_tree;
 use crate::scan::scan;
 use crate::utils::get_current_directory_path;
 use std::env;
-use crate::display::display_tree;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -23,8 +23,8 @@ pub enum OS {
 }
 
 pub enum Command {
-    Scan,
-    ScanPath(String),
+    Scan(bool, bool, bool, bool),
+    ScanPath(String, bool, bool, bool, bool),
     CreateConfig,
     AddDirectory(String),
     AddFile(String),
@@ -73,16 +73,43 @@ fn main() {
         Command::RemoveFile(file) => {
             remove_value_from_setting(ConfigOption::IgnoredFiles, file, &os)
         }
-        Command::Scan => {
+        Command::Scan(
+            show_endings,
+            show_file_sizes,
+            show_directory_sizes,
+            show_file_counts_in_directories,
+        ) => {
             let current_dir_path = get_current_directory_path();
             let tree = scan(&current_dir_path, &os);
             println!("{}", tree.name);
-            display_tree(&tree, 0, "");
+            display_tree(
+                &tree,
+                0,
+                "",
+                &show_endings,
+                &show_file_sizes,
+                &show_directory_sizes,
+                &show_file_counts_in_directories,
+            );
         }
-        Command::ScanPath(path) => {
+        Command::ScanPath(
+            path,
+            show_endings,
+            show_file_sizes,
+            show_directory_sizes,
+            show_file_counts_in_directories,
+        ) => {
             let tree = scan(&path, &os);
             println!("{}", tree.name);
-            display_tree(&tree, 0, "");
+            display_tree(
+                &tree,
+                0,
+                "",
+                &show_endings,
+                &show_file_sizes,
+                &show_directory_sizes,
+                &show_file_counts_in_directories,
+            );
         }
     }
 }
@@ -97,23 +124,59 @@ fn print_version() {
 }
 
 fn print_help() {
-    println!("fmap v-{}", VERSION);
-    println!("By: cqb13 - https://github.com/cqb13");
-    println!("A CLI tool for displaying a tree like view of files and directories.");
-    println!("");
-    println!("Commands:");
-    println!("fmap: scans from current directory");
-    println!("-p: \"path\": a custom relative path to use instead of current directory");
-    println!("-c: creates a new config file, overwriting the old one if it exists");
+    const GREEN: &str = "\x1b[32m";
+    const YELLOW: &str = "\x1b[33m";
+    const BLUE: &str = "\x1b[38;2;73;107;190m";
+    const RESET: &str = "\x1b[0m";
+
+    println!("{}fmap v-{}{}", GREEN, VERSION, RESET);
     println!(
-        "-add -dir/-file \"directory/file name\": adds a directory or file to respective list"
+        "By: {}cqb13{} - {}https://github.com/cqb13{}",
+        YELLOW, RESET, BLUE, RESET
     );
-    println!(
-        "-rmv -dir/-file \"directory/file name\": removes a directory or file from respective list"
-    );
-    println!("-ls -dir/-file: lists all directories or files in respective list");
-    println!("-v: version");
-    println!("-h: help");
+    println!("A CLI tool for displaying a tree-like view of files and directories.");
     println!("");
-    println!("https://github.com/cqb13/fmap");
+    println!("{}Usage:{} fmap [COMMAND] [OPTIONS]", YELLOW, RESET);
+    println!("");
+    println!("{}Commands:{}\n", YELLOW, RESET);
+
+    println!("{}  scan{}", GREEN, RESET);
+    println!("      Scans from the current directory.");
+    println!("      Options:");
+    println!("        -e, --endings        Show file endings");
+    println!("        -fs, --file-sizes   Show file sizes");
+    println!("        -ds, --dir-sizes    Show directory sizes");
+    println!("        -fc, --file-counts  Show file counts in directories\n");
+
+    println!("{}  scan-path <path>{}", GREEN, RESET);
+    println!("      Scans from a custom relative path.");
+    println!("      Options:");
+    println!("        -e, --endings        Show file endings");
+    println!("        -fs, --file-sizes   Show file sizes");
+    println!("        -ds, --dir-sizes    Show directory sizes");
+    println!("        -fc, --file-counts  Show file counts in directories\n");
+
+    println!("{}  config, -c{}", GREEN, RESET);
+    println!("      Creates a configuration file.\n");
+
+    println!("{}  add -dir <directory>", GREEN);
+    println!("  add -file <filename>{}", RESET);
+    println!("      Adds a directory or file to the ignored list.\n");
+
+    println!("{}  rmv -dir <directory>", GREEN);
+    println!("  rmv -file <filename>{}", RESET);
+    println!("      Removes a directory or file from the ignored list.\n");
+
+    println!("{}  ls -dir", GREEN);
+    println!("  ls -file{}", RESET);
+    println!("      Lists all ignored directories or files.\n");
+
+    println!("{}  version, -v{}", GREEN, RESET);
+    println!("      Prints the version.\n");
+
+    println!("{}  help, -h{}", GREEN, RESET);
+    println!("      Prints this help message.\n");
+
+    println!("{}For more information, visit:{}", YELLOW, RESET);
+    println!("  {}https://github.com/cqb13/fmap{}", BLUE, RESET);
 }
