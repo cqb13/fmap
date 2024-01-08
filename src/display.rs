@@ -34,7 +34,7 @@ pub fn display_tree(
     for (i, directory) in tree.directories.iter().enumerate() {
         let directory_display = format!(
             "{} {} {}",
-            directory.name,
+            directory.clean_name,
             if *show_file_counts_in_directories {
                 let file_count = directory.file_count;
                 if file_count > 0 {

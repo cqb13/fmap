@@ -8,6 +8,7 @@ pub struct DirectoryObject {
     pub directories: Vec<DirectoryObject>,
     pub files: Vec<FileObject>,
     pub name: String,
+    pub clean_name: String,
     pub path: String,
     pub size: u64,
     pub size_string: String,
@@ -20,6 +21,7 @@ impl DirectoryObject {
             directories: Vec::new(),
             files: Vec::new(),
             name: name.to_string(),
+            clean_name: String::new(),
             path: path.to_string(),
             size: 0,
             size_string: String::new(),
@@ -29,6 +31,10 @@ impl DirectoryObject {
 
     fn add_directory(&mut self, directory: DirectoryObject) {
         self.directories.push(directory);
+    }
+
+    fn set_directory_name(&mut self, name: &String) {
+        self.clean_name = name.to_string();
     }
 
     fn add_file(&mut self, file: FileObject) {
@@ -72,13 +78,14 @@ pub fn scan(start_dir_path: &String, os: &OS) -> DirectoryObject {
     let ignored_directories: Vec<&str> = ignored_directories_setting.value.split(",").collect();
     let ignored_files: Vec<&str> = ignored_files_setting.value.split(",").collect();
 
-    create_tree(start_dir_path, &ignored_directories, &ignored_files)
+    create_tree(start_dir_path, &ignored_directories, &ignored_files, os)
 }
 
 fn create_tree(
     start_dir_path: &String,
     ignored_directories: &Vec<&str>,
     ignored_files: &Vec<&str>,
+    os: &OS,
 ) -> DirectoryObject {
     let mut directory_stack: Vec<String> = Vec::new();
 
@@ -106,9 +113,17 @@ fn create_tree(
             .to_string();
 
         if entry_path.is_dir() {
-            if ignored_directories.contains(&entry_name.as_str()) {
+
+            let directory_name = match os {
+                OS::Windows => entry_name.split("\\").last().unwrap().to_string(),
+                OS::Mac => entry_name,
+            };
+
+            if ignored_directories.contains(&directory_name.as_str()) {
                 continue;
             }
+
+            // add directory name as clean name in directory obj
 
             directory_stack.push(entry_path.to_str().unwrap().to_string());
             continue;
@@ -150,7 +165,7 @@ fn create_tree(
     while !directory_stack.is_empty() {
         let current_dir_path = directory_stack.pop().unwrap();
 
-        let sub_dir_tree = create_tree(&current_dir_path, ignored_directories, ignored_files);
+        let sub_dir_tree = create_tree(&current_dir_path, ignored_directories, ignored_files, &os);
 
         tree.add_directory(sub_dir_tree);
     }
