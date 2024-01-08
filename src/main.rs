@@ -9,7 +9,7 @@ use crate::config::{
     add_value_to_setting, create_config_file, get_setting_from_config, remove_value_from_setting,
     ConfigOption,
 };
-use crate::display::display_tree;
+use crate::display::display;
 use crate::scan::scan;
 use crate::utils::get_current_directory_path;
 use std::env;
@@ -81,11 +81,8 @@ fn main() {
         ) => {
             let current_dir_path = get_current_directory_path();
             let tree = scan(&current_dir_path, &os);
-            println!("{}", tree.name);
-            display_tree(
+            display(
                 &tree,
-                0,
-                "",
                 &show_endings,
                 &show_file_sizes,
                 &show_directory_sizes,
@@ -101,11 +98,8 @@ fn main() {
             show_file_counts_in_directories,
         ) => {
             let tree = scan(&path, &os);
-            println!("{}", tree.name);
-            display_tree(
+            display(
                 &tree,
-                0,
-                "",
                 &show_endings,
                 &show_file_sizes,
                 &show_directory_sizes,

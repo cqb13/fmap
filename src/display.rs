@@ -1,7 +1,50 @@
 use crate::scan::DirectoryObject;
 use crate::OS;
+use std::fs;
 
-pub fn display_tree(
+pub fn display(
+    tree: &DirectoryObject,
+    show_endings: &bool,
+    show_file_sizes: &bool,
+    show_directory_sizes: &bool,
+    show_file_counts_in_directories: &bool,
+    os: &OS,
+) {
+    if tree.name == "" {
+        // means the name is "../", or some relative path, and not the curent directory, so we need to get the name of that directory
+        let current_dir = std::env::current_dir()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let scanned_dir = fs::canonicalize(format!("{}/{}", current_dir, tree.path)).unwrap();
+
+        let scanned_dir_name = scanned_dir
+            .to_str()
+            .unwrap()
+            .split("/")
+            .last()
+            .unwrap()
+            .to_string();
+
+        println!("{}", scanned_dir_name);
+    } else {
+        println!("{}", tree.name);
+    }
+
+    display_tree(
+        &tree,
+        0,
+        "",
+        &show_endings,
+        &show_file_sizes,
+        &show_directory_sizes,
+        &show_file_counts_in_directories,
+        &os,
+    );
+}
+
+fn display_tree(
     tree: &DirectoryObject,
     depth: i32,
     indent: &str,
