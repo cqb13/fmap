@@ -1,4 +1,5 @@
 use crate::scan::DirectoryObject;
+use crate::OS;
 
 pub fn display_tree(
     tree: &DirectoryObject,
@@ -8,6 +9,7 @@ pub fn display_tree(
     show_file_sizes: &bool,
     show_directory_sizes: &bool,
     show_file_counts_in_directories: &bool,
+    os: &OS,
 ) {
     for (i, file) in tree.files.iter().enumerate() {
         let file_display = format!(
@@ -32,9 +34,15 @@ pub fn display_tree(
     }
 
     for (i, directory) in tree.directories.iter().enumerate() {
+        // paths on windows will be the full path, but we just want the directory name
+        let directory_name = match os {
+            OS::Windows => directory.name.split("\\").last().unwrap().to_string(),
+            OS::Mac => directory.name.to_string(),
+        };
+
         let directory_display = format!(
             "{} {} {}",
-            directory.clean_name,
+            directory_name,
             if *show_file_counts_in_directories {
                 let file_count = directory.file_count;
                 if file_count > 0 {
@@ -62,6 +70,7 @@ pub fn display_tree(
                 show_file_sizes,
                 show_directory_sizes,
                 show_file_counts_in_directories,
+                os,
             );
         } else {
             println!("{}├── {}", indent, directory_display);
@@ -73,6 +82,7 @@ pub fn display_tree(
                 show_file_sizes,
                 show_directory_sizes,
                 show_file_counts_in_directories,
+                os,
             );
         }
     }

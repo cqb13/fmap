@@ -8,7 +8,6 @@ pub struct DirectoryObject {
     pub directories: Vec<DirectoryObject>,
     pub files: Vec<FileObject>,
     pub name: String,
-    pub clean_name: String,
     pub path: String,
     pub size: u64,
     pub size_string: String,
@@ -21,7 +20,6 @@ impl DirectoryObject {
             directories: Vec::new(),
             files: Vec::new(),
             name: name.to_string(),
-            clean_name: String::new(),
             path: path.to_string(),
             size: 0,
             size_string: String::new(),
@@ -31,10 +29,6 @@ impl DirectoryObject {
 
     fn add_directory(&mut self, directory: DirectoryObject) {
         self.directories.push(directory);
-    }
-
-    fn set_directory_name(&mut self, name: &String) {
-        self.clean_name = name.to_string();
     }
 
     fn add_file(&mut self, file: FileObject) {
@@ -113,17 +107,9 @@ fn create_tree(
             .to_string();
 
         if entry_path.is_dir() {
-
-            let directory_name = match os {
-                OS::Windows => entry_name.split("\\").last().unwrap().to_string(),
-                OS::Mac => entry_name,
-            };
-
-            if ignored_directories.contains(&directory_name.as_str()) {
+            if ignored_directories.contains(&entry_name.as_str()) {
                 continue;
             }
-
-            // add directory name as clean name in directory obj
 
             directory_stack.push(entry_path.to_str().unwrap().to_string());
             continue;

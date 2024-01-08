@@ -90,6 +90,7 @@ fn main() {
                 &show_file_sizes,
                 &show_directory_sizes,
                 &show_file_counts_in_directories,
+                &os,
             );
         }
         Command::ScanPath(
@@ -109,6 +110,7 @@ fn main() {
                 &show_file_sizes,
                 &show_directory_sizes,
                 &show_file_counts_in_directories,
+                &os,
             );
         }
     }

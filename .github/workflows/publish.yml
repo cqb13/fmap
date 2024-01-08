@@ -2,14 +2,11 @@ name: publish
 
 on:
   push:
-    branches:
-      - main
     tags:
       - release-*.*.*
-
-permissions:
-  contents: write
-
+    branches:
+      - main
+      
 jobs:
   publish:
     name: ${{ matrix.name }}
