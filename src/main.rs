@@ -6,13 +6,14 @@ pub mod utils;
 
 use crate::commands::arg_tokenizer;
 use crate::config::{
-    add_value_to_setting, create_config_file, get_setting_from_config, remove_value_from_setting,
-    ConfigOption,
+    add_value_to_setting, create_config_file, get_setting_from_config, get_user_home_dir,
+    remove_value_from_setting, ConfigOption,
 };
 use crate::display::display;
 use crate::scan::scan;
 use crate::utils::get_current_directory_path;
 use std::env;
+use std::io::Write;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -26,6 +27,7 @@ pub enum Command {
     Scan(bool, bool, bool, bool),
     ScanPath(String, bool, bool, bool, bool),
     CreateConfig,
+    Install,
     AddDirectory(String),
     AddFile(String),
     RemoveDirectory(String),
@@ -53,6 +55,7 @@ fn main() {
         Command::CreateConfig => recreate_config_file(&os),
         Command::Version => print_version(),
         Command::Help => print_help(),
+        Command::Install => install(&os),
         Command::ListIgnoredDirectories => {
             println!(
                 "Ignored Directories:\n{}",
@@ -113,6 +116,59 @@ fn main() {
 fn recreate_config_file(os: &OS) {
     create_config_file(&os, true);
     println!("reset config file");
+}
+
+fn install(os: &OS) {
+    let home_dir = get_user_home_dir(os);
+
+    match os {
+        OS::Windows => {
+            println!("installing on windows");
+        }
+        OS::Mac => {
+            println!("starting install on mac");
+            let local_bin_path = format!("{}/.local/bin", home_dir);
+            if !std::path::Path::new(&local_bin_path).exists() {
+                println!("creating local/bin directory");
+                std::fs::create_dir_all(&local_bin_path).unwrap();
+            }
+
+            let new_binary_path = format!("{}/fmap", local_bin_path);
+            if !std::path::Path::new(&new_binary_path).exists() {
+                println!("moving binary to local/bin");
+                println!("{:?}", get_current_directory_path());
+                println!("{:?}", &new_binary_path);
+                std::fs::copy(
+                    format!("{}/fmap", get_current_directory_path()),
+                    &new_binary_path,
+                )
+                .unwrap();
+                println!("binary moved to local/bin")
+            } else {
+                println!("replacing binary in local/bin");
+                std::fs::remove_file(&new_binary_path).unwrap();
+                std::fs::copy(
+                    format!("{}/fmap", get_current_directory_path()),
+                    &new_binary_path,
+                )
+                .unwrap();
+            }
+            println!("adding local/bin to path");
+            let bash_profile_path = format!("{}/.zprofile", home_dir);
+            let bash_profile_content = std::fs::read_to_string(&bash_profile_path).unwrap();
+            if !bash_profile_content.contains("export PATH=\"$PATH:$HOME/.local/bin\"") {
+                let mut bash_profile_file = std::fs::OpenOptions::new()
+                    .append(true)
+                    .open(&bash_profile_path)
+                    .unwrap();
+                bash_profile_file
+                    .write_all(b"export PATH=\"$PATH:$HOME/.local/bin\"\n")
+                    .unwrap();
+            }
+
+            println!("install complete");
+        }
+    }
 }
 
 fn print_version() {

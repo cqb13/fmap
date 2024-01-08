@@ -187,12 +187,16 @@ fn update_config_setting_value(value: String, key_line_number: usize, os: &OS) {
 }
 
 fn get_config_path(os: &OS) -> String {
+    let home_dir = get_user_home_dir(os);
+    format!("{}/{}", home_dir, CONFIG_FILE)
+}
+
+pub fn get_user_home_dir(os: &OS) -> String {
     let user_dir = match os {
         OS::Windows => "USERPROFILE",
         OS::Mac => "HOME",
     };
-    let home_dir = std::env::var(format!("{}", user_dir)).unwrap();
-    format!("{}/{}", home_dir, CONFIG_FILE)
+    std::env::var(format!("{}", user_dir)).unwrap()
 }
 
 fn path_exists(path: &String) -> bool {
