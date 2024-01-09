@@ -134,22 +134,22 @@ fn install(os: &OS) {
 
     match os {
         OS::Windows => {
-            let program_file_path = "C:\\Program Files\\fmap";
-            if !std::path::Path::new(&program_file_path).exists() {
-                println!("creating C:\\Program Files\\fmap directory");
-                std::fs::create_dir_all(&program_file_path).unwrap();
+            let app_data_path = format!("{}/AppData/Roaming/fmap", home_dir);
+            if !std::path::Path::new(&app_data_path).exists() {
+                println!("Creating AppData/Roaming/fmap directory");
+                std::fs::create_dir_all(&app_data_path).unwrap();
             }
 
-            let new_binary_path = format!("{}\\fmap.exe", program_file_path);
+            let new_binary_path = format!("{}/fmap.exe", app_data_path);
             if !std::path::Path::new(&new_binary_path).exists() {
-                println!("moving binary to C:\\Program Files\\fmap");
+                println!("Moving binary to AppData/Roaming/fmap");
                 std::fs::copy(
                     format!("{}/fmap.exe", get_current_directory_path()),
                     &new_binary_path,
                 )
                 .unwrap();
             } else {
-                println!("replacing binary in C:\\Program Files\\fmap");
+                println!("Replacing binary in AppData/Roaming/fmap");
                 std::fs::remove_file(&new_binary_path).unwrap();
                 std::fs::copy(
                     format!("{}/fmap.exe", get_current_directory_path()),
@@ -158,16 +158,9 @@ fn install(os: &OS) {
                 .unwrap();
             }
 
-            let path = std::env::var("PATH").unwrap();
-            if !path.contains("C:\\Program Files\\fmap") {
-                println!("adding C:\\Program Files\\fmap to path");
-                let mut path_file = std::fs::OpenOptions::new()
-                    .append(true)
-                    .open("C:\\Users\\cqb13\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\path.bat")
-                    .unwrap();
-                path_file
-                    .write_all(b"setx PATH \"%PATH%;C:\\Program Files\\fmap\"\n")
-                    .unwrap();
+            if let Err(e) = modify_registry_path(&app_data_path) {
+                eprintln!("Failed to modify system PATH: {}", e);
+                eprintln!("This action may require administrator permissions.");
             }
         }
         OS::Mac => {
@@ -210,6 +203,37 @@ fn install(os: &OS) {
     }
 
     println!("install complete");
+}
+
+fn modify_registry_path(new_path: &str) -> std::io::Result<()> {
+    use std::process::Command;
+
+    // Escape percent signs by doubling them
+    let escaped_path = new_path.replace("%", "%%");
+
+    // Prepare the command to modify the registry
+    let status = Command::new("reg")
+        .args(&[
+            "ADD",
+            "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
+            "/v",
+            "Path",
+            "/t",
+            "REG_EXPAND_SZ",
+            "/d",
+            &escaped_path,
+            "/f",
+        ])
+        .status()?;
+
+    if !status.success() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to modify registry",
+        ));
+    }
+
+    Ok(())
 }
 
 fn print_version() {
