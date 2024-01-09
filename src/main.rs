@@ -161,6 +161,7 @@ fn install(os: &OS) {
             if let Err(e) = modify_registry_path(&app_data_path) {
                 eprintln!("Failed to modify system PATH: {}", e);
                 eprintln!("This action may require administrator permissions.");
+                return;
             }
         }
         OS::Mac => {
