@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::config::{get_setting_from_config, ConfigOption};
+use crate::system::config::{get_setting_from_config, ConfigOption};
 use crate::OS;
 
 #[derive(Debug)]
@@ -90,7 +90,9 @@ fn create_tree(
 
     let mut start_dir_contents = match fs::read_dir(start_dir_path) {
         Ok(contents) => contents,
-        Err(_) => panic!("could not read directory"),
+        Err(_) => {
+            return tree;
+        },
     };
 
     let mut file_count = 0;
