@@ -23,6 +23,15 @@ pub enum OS {
     Mac,
 }
 
+impl OS {
+    fn get_name(&self) -> &str {
+        match self {
+            OS::Windows => "Windows",
+            OS::Mac => "Mac",
+        }
+    }
+}
+
 pub enum Command {
     Scan(bool, bool, bool, bool),
     ScanPath(String, bool, bool, bool, bool),
@@ -119,33 +128,65 @@ fn recreate_config_file(os: &OS) {
 }
 
 fn install(os: &OS) {
+    println!("starting install on {}", os.get_name());
+
     let home_dir = get_user_home_dir(os);
 
     match os {
         OS::Windows => {
-            println!("installing on windows");
+            let program_file_path = "C:\\Program Files\\fmap";
+            if !std::path::Path::new(&program_file_path).exists() {
+                println!("creating C:\\Program Files\\fmap directory");
+                std::fs::create_dir_all(&program_file_path).unwrap();
+            }
+
+            let new_binary_path = format!("{}\\fmap.exe", program_file_path);
+            if !std::path::Path::new(&new_binary_path).exists() {
+                println!("moving binary to C:\\Program Files\\fmap");
+                std::fs::copy(
+                    format!("{}/fmap.exe", get_current_directory_path()),
+                    &new_binary_path,
+                )
+                .unwrap();
+            } else {
+                println!("replacing binary in C:\\Program Files\\fmap");
+                std::fs::remove_file(&new_binary_path).unwrap();
+                std::fs::copy(
+                    format!("{}/fmap.exe", get_current_directory_path()),
+                    &new_binary_path,
+                )
+                .unwrap();
+            }
+
+            let path = std::env::var("PATH").unwrap();
+            if !path.contains("C:\\Program Files\\fmap") {
+                println!("adding C:\\Program Files\\fmap to path");
+                let mut path_file = std::fs::OpenOptions::new()
+                    .append(true)
+                    .open("C:\\Users\\cqb13\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\path.bat")
+                    .unwrap();
+                path_file
+                    .write_all(b"setx PATH \"%PATH%;C:\\Program Files\\fmap\"\n")
+                    .unwrap();
+            }
         }
         OS::Mac => {
-            println!("starting install on mac");
             let local_bin_path = format!("{}/.local/bin", home_dir);
             if !std::path::Path::new(&local_bin_path).exists() {
-                println!("creating local/bin directory");
+                println!("creating .local/bin directory");
                 std::fs::create_dir_all(&local_bin_path).unwrap();
             }
 
             let new_binary_path = format!("{}/fmap", local_bin_path);
             if !std::path::Path::new(&new_binary_path).exists() {
-                println!("moving binary to local/bin");
-                println!("{:?}", get_current_directory_path());
-                println!("{:?}", &new_binary_path);
+                println!("moving binary to .local/bin");
                 std::fs::copy(
                     format!("{}/fmap", get_current_directory_path()),
                     &new_binary_path,
                 )
                 .unwrap();
-                println!("binary moved to local/bin")
             } else {
-                println!("replacing binary in local/bin");
+                println!("replacing binary in .local/bin");
                 std::fs::remove_file(&new_binary_path).unwrap();
                 std::fs::copy(
                     format!("{}/fmap", get_current_directory_path()),
@@ -153,22 +194,22 @@ fn install(os: &OS) {
                 )
                 .unwrap();
             }
-            println!("adding local/bin to path");
-            let bash_profile_path = format!("{}/.zprofile", home_dir);
-            let bash_profile_content = std::fs::read_to_string(&bash_profile_path).unwrap();
-            if !bash_profile_content.contains("export PATH=\"$PATH:$HOME/.local/bin\"") {
-                let mut bash_profile_file = std::fs::OpenOptions::new()
+            let zprofile_path = format!("{}/.zprofile", home_dir);
+            let zprofile_content = std::fs::read_to_string(&zprofile_path).unwrap();
+            if !zprofile_content.contains("export PATH=\"$PATH:$HOME/.local/bin\"") {
+                println!("adding .local/bin to path");
+                let mut zprofile_file = std::fs::OpenOptions::new()
                     .append(true)
-                    .open(&bash_profile_path)
+                    .open(&zprofile_content)
                     .unwrap();
-                bash_profile_file
+                zprofile_file
                     .write_all(b"export PATH=\"$PATH:$HOME/.local/bin\"\n")
                     .unwrap();
             }
-
-            println!("install complete");
         }
     }
+
+    println!("install complete");
 }
 
 fn print_version() {
