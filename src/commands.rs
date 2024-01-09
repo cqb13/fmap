@@ -12,6 +12,7 @@ pub fn arg_tokenizer(mut args: Vec<String>) -> Command {
     match args[0].as_str() {
         "config" | "-c" => return Command::CreateConfig,
         "version" | "-v" => return Command::Version,
+        "install" | "-i" => return Command::Install,
         "help" | "-h" => return Command::Help,
         "add" | "-add" => {
             if args.len() < 3 {

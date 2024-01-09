@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod config;
 pub mod display;
+pub mod install;
 pub mod scan;
 pub mod utils;
 
@@ -10,6 +11,7 @@ use crate::config::{
     ConfigOption,
 };
 use crate::display::display;
+use crate::install::install;
 use crate::scan::scan;
 use crate::utils::get_current_directory_path;
 use std::env;
@@ -22,10 +24,20 @@ pub enum OS {
     Mac,
 }
 
+impl OS {
+    fn get_name(&self) -> &str {
+        match self {
+            OS::Windows => "Windows",
+            OS::Mac => "Mac",
+        }
+    }
+}
+
 pub enum Command {
     Scan(bool, bool, bool, bool),
     ScanPath(String, bool, bool, bool, bool),
     CreateConfig,
+    Install,
     AddDirectory(String),
     AddFile(String),
     RemoveDirectory(String),
@@ -53,6 +65,7 @@ fn main() {
         Command::CreateConfig => recreate_config_file(&os),
         Command::Version => print_version(),
         Command::Help => print_help(),
+        Command::Install => install(&os),
         Command::ListIgnoredDirectories => {
             println!(
                 "Ignored Directories:\n{}",
@@ -151,6 +164,9 @@ fn print_help() {
     println!("        -fs, --file-sizes   Show file sizes");
     println!("        -ds, --dir-sizes    Show directory sizes");
     println!("        -fc, --file-counts  Show file counts in directories\n");
+
+    println!("{}  install{}", GREEN, RESET);
+    println!("      Installs fmap to your system.\n");
 
     println!("{}  config, -c{}", GREEN, RESET);
     println!("      Creates a configuration file.\n");
