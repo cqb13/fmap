@@ -1,4 +1,4 @@
-use crate::config::get_user_home_dir;
+use crate::system::config::get_user_home_dir;
 use crate::utils::get_current_directory_path;
 use crate::OS;
 use std::io::Write;
@@ -34,7 +34,7 @@ pub fn install(os: &OS) {
                 .unwrap();
             }
 
-            if let Err(e) = modify_registry_path(&app_data_path) {
+            if let Err(e) = add_registry_path(&app_data_path) {
                 eprintln!("Failed to modify system PATH: {}", e);
                 eprintln!("This action may require administrator permissions.");
                 return;
@@ -82,7 +82,30 @@ pub fn install(os: &OS) {
     println!("install complete");
 }
 
-fn modify_registry_path(new_path: &str) -> std::io::Result<()> {
+pub fn uninstall(os: &OS) {
+    println!("starting uninstall on {}", os.get_name());
+
+    let home_dir = get_user_home_dir(os);
+
+    match os {
+        OS::Windows => {
+            println!("uninstalling on windows");
+        }
+        OS::Mac => {
+            let local_bin_path = format!("{}/.local/bin", home_dir);
+            if std::path::Path::new(&local_bin_path).exists() {
+                println!("removing binary from .local/bin");
+                std::fs::remove_file(&local_bin_path).unwrap();
+            }
+
+            // path is not removed as their may be other binaries later added into the directory
+        }
+    }
+
+    println!("uninstall complete");
+}
+
+fn add_registry_path(new_path: &str) -> std::io::Result<()> {
     use std::process::Command;
 
     // Escape percent signs by doubling them

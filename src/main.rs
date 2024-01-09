@@ -1,18 +1,21 @@
 pub mod commands;
-pub mod config;
 pub mod display;
-pub mod install;
 pub mod scan;
 pub mod utils;
 
+pub mod system {
+    pub mod config;
+    pub mod local;
+}
+
 use crate::commands::arg_tokenizer;
-use crate::config::{
+use crate::display::display;
+use crate::scan::scan;
+use crate::system::config::{
     add_value_to_setting, create_config_file, get_setting_from_config, remove_value_from_setting,
     ConfigOption,
 };
-use crate::display::display;
-use crate::install::install;
-use crate::scan::scan;
+use crate::system::local::install;
 use crate::utils::get_current_directory_path;
 use std::env;
 
