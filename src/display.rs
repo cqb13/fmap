@@ -1,6 +1,8 @@
 use crate::scan::DirectoryObject;
+use crate::utils::get_current_directory_path;
 use crate::OS;
 use std::fs;
+use std::path::PathBuf;
 
 pub fn display(
     tree: &DirectoryObject,
@@ -10,37 +12,31 @@ pub fn display(
     show_file_counts_in_directories: &bool,
     os: &OS,
 ) {
-    if tree.name == "" {
-        // means the name is "../", or some relative path, and not the curent directory, so we need to get the name of that directory
-        let current_dir = std::env::current_dir()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
-        let scanned_dir = fs::canonicalize(format!("{}/{}", current_dir, tree.path)).unwrap();
+    let display_name = if tree.name.is_empty() {
+        // Handle relative paths
+        let current_dir = PathBuf::from(get_current_directory_path());
+        let scanned_dir =
+            fs::canonicalize(current_dir.join(&tree.path)).expect("Unable to canonicalize path");
 
-        let scanned_dir_name = scanned_dir
-            .to_str()
-            .unwrap()
-            .split("/")
-            .last()
-            .unwrap()
-            .to_string();
-
-        println!("{}", scanned_dir_name);
+        scanned_dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map_or_else(|| "".to_string(), |s| s.to_string())
     } else {
-        println!("{}", tree.name);
-    }
+        tree.name.clone()
+    };
+
+    println!("{}", display_name);
 
     display_tree(
         &tree,
         0,
         "",
-        &show_endings,
-        &show_file_sizes,
-        &show_directory_sizes,
-        &show_file_counts_in_directories,
-        &os,
+        show_endings,
+        show_file_sizes,
+        show_directory_sizes,
+        show_file_counts_in_directories,
+        os,
     );
 }
 
@@ -69,30 +65,31 @@ fn display_tree(
             }
         );
 
-        if i == tree.files.len() - 1 && tree.directories.len() == 0 {
-            println!("{}└── {}", indent, file_display);
-        } else {
-            println!("{}├── {}", indent, file_display);
-        }
+        let is_last_file = i == tree.files.len() - 1 && tree.directories.is_empty();
+        println!(
+            "{}{}── {}",
+            indent,
+            if is_last_file { '└' } else { '├' },
+            file_display
+        );
     }
 
     for (i, directory) in tree.directories.iter().enumerate() {
-        // paths on windows will be the full path, but we just want the directory name
         let directory_name = match os {
-            OS::Windows => directory.name.split("\\").last().unwrap().to_string(),
-            OS::Mac => directory.name.to_string(),
+            OS::Windows => directory
+                .name
+                .split("\\")
+                .last()
+                .unwrap_or_default()
+                .to_string(),
+            OS::Mac => directory.name.clone(),
         };
 
         let directory_display = format!(
             "{} {} {}",
             directory_name,
-            if *show_file_counts_in_directories {
-                let file_count = directory.file_count;
-                if file_count > 0 {
-                    format!("({})", file_count)
-                } else {
-                    "".to_string()
-                }
+            if *show_file_counts_in_directories && directory.file_count > 0 {
+                format!("({})", directory.file_count)
             } else {
                 "".to_string()
             },
@@ -103,30 +100,24 @@ fn display_tree(
             }
         );
 
-        if i == tree.directories.len() - 1 {
-            println!("{}└── {}", indent, directory_display);
-            display_tree(
-                &directory,
-                depth + 1,
-                &format!("{}    ", indent),
-                show_endings,
-                show_file_sizes,
-                show_directory_sizes,
-                show_file_counts_in_directories,
-                os,
-            );
-        } else {
-            println!("{}├── {}", indent, directory_display);
-            display_tree(
-                &directory,
-                depth + 1,
-                &format!("{}│   ", indent),
-                show_endings,
-                show_file_sizes,
-                show_directory_sizes,
-                show_file_counts_in_directories,
-                os,
-            );
-        }
+        let is_last_directory = i == tree.directories.len() - 1;
+        let connector = if is_last_directory { '└' } else { '├' };
+
+        println!("{}{}── {}", indent, connector, directory_display);
+        let child_indent = format!(
+            "{}{}",
+            indent,
+            if is_last_directory { "    " } else { "│   " }
+        );
+        display_tree(
+            &directory,
+            depth + 1,
+            &child_indent,
+            show_endings,
+            show_file_sizes,
+            show_directory_sizes,
+            show_file_counts_in_directories,
+            os,
+        );
     }
 }
