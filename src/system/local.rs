@@ -82,29 +82,6 @@ pub fn install(os: &OS) {
     println!("install complete");
 }
 
-pub fn uninstall(os: &OS) {
-    println!("starting uninstall on {}", os.get_name());
-
-    let home_dir = get_user_home_dir(os);
-
-    match os {
-        OS::Windows => {
-            println!("uninstalling on windows");
-        }
-        OS::Mac => {
-            let local_bin_path = format!("{}/.local/bin", home_dir);
-            if std::path::Path::new(&local_bin_path).exists() {
-                println!("removing binary from .local/bin");
-                std::fs::remove_file(&local_bin_path).unwrap();
-            }
-
-            // path is not removed as their may be other binaries later added into the directory
-        }
-    }
-
-    println!("uninstall complete");
-}
-
 fn add_registry_path(new_path: &str) -> std::io::Result<()> {
     use std::process::Command;
 

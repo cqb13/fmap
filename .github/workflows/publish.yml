@@ -54,22 +54,22 @@ jobs:
         run: |
           choco install zip
           cd target/${{ matrix.target }}/release
-          zip fmap-0.1.3-${{ matrix.target }}.zip fmap.exe
+          zip fmap-0.1.4-${{ matrix.target }}.zip fmap.exe
           cd ../../..
 
       - name: Create tar.gz file on macOS
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           chmod +x target/${{ matrix.target }}/release/fmap
-          tar -zcf target/${{ matrix.target }}/release/fmap-0.1.3-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release fmap
+          tar -zcf target/${{ matrix.target }}/release/fmap-0.1.4-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release fmap
           chmod +x target/${{ matrix.target2 }}/release/fmap
-          tar -zcf target/${{ matrix.target2 }}/release/fmap-0.1.3-${{ matrix.target2 }}.tar.gz -C target/${{ matrix.target2 }}/release fmap
+          tar -zcf target/${{ matrix.target2 }}/release/fmap-0.1.4-${{ matrix.target2 }}.tar.gz -C target/${{ matrix.target2 }}/release fmap
 
       - name: Upload release and assets to GitHub
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: "release-0.1.3-${{ github.run_number }}"
-          release_name: fmap 0.1.3
+          tag: "release-0.1.4-${{ github.run_number }}"
+          release_name: fmap 0.1.4
           file_glob: true
-          file: target/*/release/fmap-0.1.3-*.{zip,tar.gz}
+          file: target/*/release/fmap-0.1.4-*.{zip,tar.gz}
