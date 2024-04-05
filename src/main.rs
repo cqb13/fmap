@@ -1,4 +1,4 @@
-pub mod commands;
+pub mod cli;
 pub mod display;
 pub mod scan;
 pub mod utils;
@@ -8,7 +8,6 @@ pub mod system {
     pub mod local;
 }
 
-use crate::commands::arg_tokenizer;
 use crate::display::display;
 use crate::scan::scan;
 use crate::system::config::{
@@ -17,9 +16,7 @@ use crate::system::config::{
 };
 use crate::system::local::install;
 use crate::utils::get_current_directory_path;
-use std::env;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+use cli::{Arg, Cli, Command, Property};
 
 #[derive(Debug)]
 pub enum OS {
@@ -36,24 +33,7 @@ impl OS {
     }
 }
 
-pub enum Command {
-    Scan(bool, bool, bool, bool),
-    ScanPath(String, bool, bool, bool, bool),
-    CreateConfig,
-    Install,
-    AddDirectory(String),
-    AddFile(String),
-    RemoveDirectory(String),
-    RemoveFile(String),
-    ListIgnoredDirectories,
-    ListIgnoredFiles,
-    Version,
-    Help,
-}
-
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
     let os = match std::env::consts::OS {
         "windows" => OS::Windows,
         "macos" => OS::Mac,
@@ -62,41 +42,205 @@ fn main() {
 
     create_config_file(&os, false);
 
-    let command = arg_tokenizer(args);
+    let cli = Cli::new(
+        Property::Auto,
+        Property::Auto,
+        Property::Auto,
+        Property::Auto,
+        Property::Auto,
+        vec![
+            Command::new("config", "Creates a new config file").with_short('c'),
+            Command::new("version", "Displays the current version of fmap").with_short('v'),
+            Command::new("install", "Installs the files and directories"),
+            Command::new("add", "Adds a file or directory to the ignore list")
+                .with_short('a')
+                .with_arg(
+                    Arg::new()
+                        .with_name("type")
+                        .with_short('t')
+                        .with_long("type")
+                        .with_value_name("TYPE")
+                        .with_help("file (file) or directory (dir)"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("name")
+                        .with_short('n')
+                        .with_long("name")
+                        .with_value_name("NAME")
+                        .with_help("The name of the file/file ending or directory"),
+                ),
+            Command::new("remove", "Removes a file or directory to the ignore list")
+                .with_short('r')
+                .with_arg(
+                    Arg::new()
+                        .with_name("type")
+                        .with_short('t')
+                        .with_long("type")
+                        .with_value_name("TYPE")
+                        .with_help("file (file) or directory (dir)"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("name")
+                        .with_short('n')
+                        .with_long("name")
+                        .with_value_name("NAME")
+                        .with_help("The name of the file/file ending or directory"),
+                ),
+            Command::new("list", "Lists all files or directories in the ignore list")
+                .with_short('r')
+                .with_arg(
+                    Arg::new()
+                        .with_name("type")
+                        .with_short('t')
+                        .with_long("type")
+                        .with_value_name("TYPE")
+                        .with_help("file (file) or directory (dir)"),
+                ),
+            Command::new("scan", "Scans the current directory")
+                .with_short('s')
+                .with_arg(
+                    Arg::new()
+                        .with_name("endings")
+                        .with_short('e')
+                        .with_long("endings")
+                        .with_help("Shows the file endings"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("file_sizes")
+                        .with_short('f')
+                        .with_long("file-sizes")
+                        .with_help("Shows the file sizes"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("directory_sizes")
+                        .with_short('d')
+                        .with_long("directory-sizes")
+                        .with_help("Shows the directory sizes"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("file_counts_in_directories")
+                        .with_short('c')
+                        .with_long("file-counts-in-directories")
+                        .with_help("Shows the file counts in directories"),
+                ),
+            Command::new("scan-path", "Scans a specific path")
+                .with_short('p')
+                .with_arg(
+                    Arg::new()
+                        .with_name("path")
+                        .with_short('p')
+                        .with_long("path")
+                        .with_value_name("PATH")
+                        .with_help("The path to scan"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("endings")
+                        .with_short('e')
+                        .with_long("endings")
+                        .with_help("Shows the file endings"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("file_sizes")
+                        .with_short('f')
+                        .with_long("file-sizes")
+                        .with_help("Shows the file sizes"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("directory_sizes")
+                        .with_short('d')
+                        .with_long("directory-sizes")
+                        .with_help("Shows the directory sizes"),
+                )
+                .with_arg(
+                    Arg::new()
+                        .with_name("file_counts_in_directories")
+                        .with_short('c')
+                        .with_long("file-counts-in-directories")
+                        .with_help("Shows the file counts in directories"),
+                ),
+            Command::new("help", "Helps you with the commands").with_short('h'),
+        ],
+    );
 
-    match command {
-        Command::CreateConfig => recreate_config_file(&os),
-        Command::Version => print_version(),
-        Command::Help => print_help(),
-        Command::Install => install(&os),
-        Command::ListIgnoredDirectories => {
-            println!(
-                "Ignored Directories:\n{}",
-                get_setting_from_config(ConfigOption::IgnoredDirectories, &os).value
-            )
+    let command = cli.match_commands();
+
+    match command.name {
+        "config" => {
+            recreate_config_file(&os);
         }
-        Command::ListIgnoredFiles => println!(
-            "Ignored Files:\n{}",
-            get_setting_from_config(ConfigOption::IgnoredFiles, &os).value
-        ),
-        Command::AddDirectory(dir) => {
-            add_value_to_setting(ConfigOption::IgnoredDirectories, dir, &os)
+        "version" => {
+            cli.version();
         }
-        Command::AddFile(file) => add_value_to_setting(ConfigOption::IgnoredFiles, file, &os),
-        Command::RemoveDirectory(dir) => {
-            remove_value_from_setting(ConfigOption::IgnoredDirectories, dir, &os)
+        "install" => {
+            install(&os);
         }
-        Command::RemoveFile(file) => {
-            remove_value_from_setting(ConfigOption::IgnoredFiles, file, &os)
+        "add" => {
+            let list_type = command.get_value_of("type").throw_if_none();
+            let name = command.get_value_of("name").throw_if_none();
+
+            match list_type.as_str() {
+                "file" => {
+                    add_value_to_setting(ConfigOption::IgnoredFiles, &name, &os);
+                }
+                "dir" => {
+                    add_value_to_setting(ConfigOption::IgnoredDirectories, &name, &os);
+                }
+                _ => {
+                    println!("Invalid list type, must be \"file\" or \"dir\"");
+                }
+            }
         }
-        Command::Scan(
-            show_endings,
-            show_file_sizes,
-            show_directory_sizes,
-            show_file_counts_in_directories,
-        ) => {
+        "remove" => {
+            let list_type = command.get_value_of("type").throw_if_none();
+            let name = command.get_value_of("name").throw_if_none();
+
+            match list_type.as_str() {
+                "file" => {
+                    remove_value_from_setting(ConfigOption::IgnoredFiles, &name, &os);
+                }
+                "dir" => {
+                    remove_value_from_setting(ConfigOption::IgnoredDirectories, &name, &os);
+                }
+                _ => {
+                    println!("Invalid list type, must be \"file\" or \"dir\"");
+                }
+            }
+        }
+        "list" => {
+            let list_type = command.get_value_of("type").throw_if_none();
+
+            match list_type.as_str() {
+                "file" => {
+                    let files = get_setting_from_config(ConfigOption::IgnoredFiles, &os).value;
+                    println!("Files: {:?}", files);
+                }
+                "dir" => {
+                    let directories =
+                        get_setting_from_config(ConfigOption::IgnoredDirectories, &os).value;
+                    println!("Directories: {:?}", directories);
+                }
+                _ => {
+                    println!("Invalid list type, must be \"file\" or \"dir\"");
+                }
+            }
+        }
+        "scan" => {
+            let show_endings = command.has("endings");
+            let show_file_sizes = command.has("file_sizes");
+            let show_directory_sizes = command.has("directory_sizes");
+            let show_file_counts_in_directories = command.has("file_counts_in_directories");
+
             let current_dir_path = get_current_directory_path();
             let tree = scan(&current_dir_path, &os);
+
             display(
                 &tree,
                 &show_endings,
@@ -106,14 +250,15 @@ fn main() {
                 &os,
             );
         }
-        Command::ScanPath(
-            path,
-            show_endings,
-            show_file_sizes,
-            show_directory_sizes,
-            show_file_counts_in_directories,
-        ) => {
+        "scan-path" => {
+            let path = command.get_value_of("path").throw_if_none();
+            let show_endings = command.has("endings");
+            let show_file_sizes = command.has("file_sizes");
+            let show_directory_sizes = command.has("directory_sizes");
+            let show_file_counts_in_directories = command.has("file_counts_in_directories");
+
             let tree = scan(&path, &os);
+
             display(
                 &tree,
                 &show_endings,
@@ -122,6 +267,12 @@ fn main() {
                 &show_file_counts_in_directories,
                 &os,
             );
+        }
+        "help" => {
+            cli.help();
+        }
+        _ => {
+            println!("Invalid command");
         }
     }
 }
@@ -129,69 +280,4 @@ fn main() {
 fn recreate_config_file(os: &OS) {
     create_config_file(&os, true);
     println!("reset config file");
-}
-
-fn print_version() {
-    println!("fmap v-{}", VERSION);
-}
-
-fn print_help() {
-    const GREEN: &str = "\x1b[32m";
-    const YELLOW: &str = "\x1b[33m";
-    const BLUE: &str = "\x1b[38;2;73;107;190m";
-    const RESET: &str = "\x1b[0m";
-
-    println!("{}fmap v-{}{}", GREEN, VERSION, RESET);
-    println!(
-        "By: {}cqb13{} - {}https://github.com/cqb13{}",
-        YELLOW, RESET, BLUE, RESET
-    );
-    println!("A CLI tool for displaying a tree-like view of files and directories.");
-    println!("");
-    println!("{}Usage:{} fmap [COMMAND] [OPTIONS]", YELLOW, RESET);
-    println!("");
-    println!("{}Commands:{}\n", YELLOW, RESET);
-
-    println!("{}  scan{}", GREEN, RESET);
-    println!("      Scans from the current directory.");
-    println!("      Options:");
-    println!("        -e, --endings        Show file endings");
-    println!("        -fs, --file-sizes   Show file sizes");
-    println!("        -ds, --dir-sizes    Show directory sizes");
-    println!("        -fc, --file-counts  Show file counts in directories\n");
-
-    println!("{}  scan-path <path>{}", GREEN, RESET);
-    println!("      Scans from a custom relative path.");
-    println!("      Options:");
-    println!("        -e, --endings        Show file endings");
-    println!("        -fs, --file-sizes   Show file sizes");
-    println!("        -ds, --dir-sizes    Show directory sizes");
-    println!("        -fc, --file-counts  Show file counts in directories\n");
-
-    println!("{}  install{}", GREEN, RESET);
-    println!("      Installs fmap to your system.\n");
-
-    println!("{}  config, -c{}", GREEN, RESET);
-    println!("      Creates a configuration file.\n");
-
-    println!("{}  add -dir <directory>", GREEN);
-    println!("  add -file <filename>{}", RESET);
-    println!("      Adds a directory or file to the ignored list.\n");
-
-    println!("{}  rmv -dir <directory>", GREEN);
-    println!("  rmv -file <filename>{}", RESET);
-    println!("      Removes a directory or file from the ignored list.\n");
-
-    println!("{}  ls -dir", GREEN);
-    println!("  ls -file{}", RESET);
-    println!("      Lists all ignored directories or files.\n");
-
-    println!("{}  version, -v{}", GREEN, RESET);
-    println!("      Prints the version.\n");
-
-    println!("{}  help, -h{}", GREEN, RESET);
-    println!("      Prints this help message.\n");
-
-    println!("{}For more information, visit:{}", YELLOW, RESET);
-    println!("  {}https://github.com/cqb13/fmap{}", BLUE, RESET);
 }

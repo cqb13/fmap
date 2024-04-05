@@ -118,7 +118,7 @@ pub fn get_setting_from_config(config_option: ConfigOption, os: &OS) -> Setting 
     Setting::new("".to_string(), 0, "".to_string())
 }
 
-pub fn remove_value_from_setting(config_option: ConfigOption, value_setting: String, os: &OS) {
+pub fn remove_value_from_setting(config_option: ConfigOption, value_setting: &str, os: &OS) {
     let object_type = match config_option {
         ConfigOption::IgnoredDirectories => Object::Directory,
         ConfigOption::IgnoredFiles => Object::File,
@@ -148,7 +148,7 @@ pub fn remove_value_from_setting(config_option: ConfigOption, value_setting: Str
     println!("removed {} from {}", value_setting, setting.key);
 }
 
-pub fn add_value_to_setting(config_option: ConfigOption, value_setting: String, os: &OS) {
+pub fn add_value_to_setting(config_option: ConfigOption, value_setting: &str, os: &OS) {
     let object_type = match config_option {
         ConfigOption::IgnoredDirectories => Object::Directory,
         ConfigOption::IgnoredFiles => Object::File,
