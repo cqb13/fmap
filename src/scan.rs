@@ -92,7 +92,7 @@ fn create_tree(
         Ok(contents) => contents,
         Err(_) => {
             return tree;
-        },
+        }
     };
 
     let mut file_count = 0;
