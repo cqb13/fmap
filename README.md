@@ -24,36 +24,33 @@ The following commands are available for use with Fmap:
 
   ```bash
   # Scan Commands
-  fmap                    # Scans from the current directory
-  fmap -s                # Scans with default options
-  fmap -s -e -fs -ds -fc  # Scans with optional features: show file endings, file sizes, directory sizes, and file counts in directories
-  fmap -sp "path"        # Scans from a custom relative path
+  fmap scan                    # Scans the current directory with options for file endings, sizes, and counts
+  fmap scan-path --path "path" # Scans a specific path with options for file endings, sizes, and counts
 
   # Configuration Commands
-  fmap -c                # Creates/reset the configuration file
+  fmap config                 # Creates or resets the configuration file
 
   # Ignored Directories and Files Commands
-  fmap -add -dir "directory"  # Adds a directory to the ignored list
-  fmap -add -file "filename"  # Adds a file to the ignored list
-  fmap -rmv -dir "directory"  # Removes a directory from the ignored list
-  fmap -rmv -file "filename"  # Removes a file from the ignored list
-  fmap -ls -dir             # Lists all ignored directories
-  fmap -ls -file            # Lists all ignored files
+  fmap add --type "file/dir" --name "name"  # Adds a file or directory to the ignored list
+  fmap remove --type "file/dir" --name "name"  # Removes a file or directory from the ignored list
+  fmap list --type "file/dir"               # Lists all ignored files or directories
 
-  # Other Commands
-  fmap -i                # Adds the binary to the PATH environment variable
-  fmap -v                # Prints the version
-  fmap -h                # Prints the help
+  # Installation Command
+  fmap install                # Adds the binary to the PATH environment variable
+
+  # Version and Help Commands
+  fmap version                # Prints the version
+  fmap help                   # Prints the help
   ```
 
-**Note:** Replace "path," "directory," and "filename" with your desired paths, directories, and filenames. You can customize the scan options with flags such as `-e` for file endings, `-fs` for file sizes, `-ds` for directory sizes, and `-fc` for file counts in directories.
+**Note:** Replace "path," "directory," and "filename" with your desired paths, directories, and filenames. Customize the scan options with flags such as `--endings`, `--file-sizes`, `--directory-sizes`, and `--file-counts-in-directories` for detailed information.
 
 ## Example Output
 
 ### Command
 
 ```bash
-fmap scan -e -fc
+fmap scan --endings --file-counts-in-directories
 ```
 
 ### Output
@@ -80,50 +77,7 @@ You can try out Fmap online at [https://foldermap.cqb13.dev](https://foldermap.c
 
 ## Installation
 
-### macOS
-
-1. Download the latest macOS release from [GitHub](https://github.com/cqb13/fmap/releases) or build from source
-2. Extract the zip file
-3. Open the folder with the extracted file in your terminal
-4. Run the following command:
-
-   ```bash
-   ./fmap -i
-   ```
-
-5. restart your terminal and run the following command:
-
-   ```bash
-   fmap -v
-   ```
-
-6. If the version is printed, you have successfully installed Fmap, if not, please submit an issue on [GitHub](https://github.com/cqb13/fmap/issues), with the error message.
-
-### Windows
-
-1. Download the latest windows release from [GitHub](https://github.com/cqb13/fmap/releases) or build from source
-2. Extract the zip file
-3. Open the folder with the extracted file in your terminal (you must use administrator privileges)
-4. Run the following command:
-
-   ```bash
-   ./fmap.exe -i
-   ```
-
-5. restart your computer
-6. Open your terminal and run the following command:
-
-   ```bash
-   fmap -v
-   ```
-
-7. If the version is printed, you have successfully installed Fmap, if not, please submit an issue on [GitHub](https://github.com/cqb13/fmap/issues), with the error message.
-
-### Alternative Installation
-
-1. Clone the repository: `git clone https://github.com/cqb13/fmap.git`
-2. Navigate to the project directory: `cd fmap`
-3. Build and install with Cargo: `cargo install --path .`
+Refer to the "Installation" section in the original markdown for platform-specific installation instructions.
 
 ## Contributing
 
