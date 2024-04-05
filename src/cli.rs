@@ -261,9 +261,8 @@ impl<'a> Cli<'a> {
             self.commands
                 .iter()
                 .find(|&command| {
-                    println!("{:?}", command.name);
                     command.name == command_name
-                        || command.short
+                        || (command.short
                             == Some(
                                 command_name
                                     .replace("-", "")
@@ -272,6 +271,7 @@ impl<'a> Cli<'a> {
                                     .next()
                                     .unwrap(),
                             )
+                            && command_name.len() == 1)
                 })
                 .unwrap_or_else(|| &self.commands[self.commands.len() - 1])
         }
