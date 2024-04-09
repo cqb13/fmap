@@ -16,7 +16,7 @@ use crate::system::config::{
 };
 use crate::system::local::install;
 use crate::utils::get_current_directory_path;
-use cli::{Arg, Cli, Command, Property};
+use cli::{Arg, Cli, Command};
 
 #[derive(Debug)]
 pub enum OS {
@@ -42,13 +42,9 @@ fn main() {
 
     create_config_file(&os, false);
 
-    let cli = Cli::new(
-        Property::Auto,
-        Property::Auto,
-        Property::Auto,
-        Property::Auto,
-        Property::Auto,
-        vec![
+    let cli = Cli::new()
+        .with_default_command("scan")
+        .with_commands(vec![
             Command::new("config", "Creates a new config file").with_short('c'),
             Command::new("version", "Displays the current version of fmap").with_short('v'),
             Command::new("install", "Installs the files and directories"),
@@ -167,8 +163,7 @@ fn main() {
                         .with_help("Shows the file counts in directories"),
                 ),
             Command::new("help", "Helps you with the commands").with_short('h'),
-        ],
-    );
+        ]);
 
     let command = cli.match_commands();
 
