@@ -24,6 +24,7 @@ The following commands are available for use with Fmap:
 
   ```bash
   # Scan Commands
+  fmap                         # Scans from the current directory with default options
   fmap scan                    # Scans the current directory with options for file endings, sizes, and counts
   fmap scan-path --path "path" # Scans a specific path with options for file endings, sizes, and counts
 
