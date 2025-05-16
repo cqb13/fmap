@@ -1,180 +1,193 @@
+use crate::prints;
 use std::env;
 
-#[derive(Debug, Clone)]
-pub struct Arg {
-    pub name: &'static str,
-    pub short: Option<char>,
-    pub long: Option<&'static str>,
-    pub value_name: &'static str,
-    pub default: Option<String>,
-    pub help: &'static str,
-    pub requires: Vec<&'static str>,
-}
-
-#[derive(Debug)]
-pub struct Command<'a> {
-    pub name: &'a str,
-    pub short: Option<char>,
-    pub description: &'a str,
-    pub args: Option<Vec<Arg>>,
-}
-
-pub struct Cli<'a> {
+pub struct Cli {
     pub name: String,
+    pub bin: String,
     pub description: String,
     pub author: String,
     pub github: String,
     pub version: String,
-    pub commands: Vec<Command<'a>>,
+    pub commands: Vec<Command>,
     pub default_command: Option<String>,
 }
 
-impl Arg {
-    pub fn new() -> Arg {
-        Arg {
-            name: "",
-            short: None,
-            long: None,
-            value_name: "",
-            default: None,
-            help: "",
-            requires: Vec::new(),
+impl Cli {
+    pub fn new() -> Cli {
+        Cli {
+            name: env!("CARGO_PKG_NAME").to_string(),
+            bin: env!("CARGO_PKG_NAME").to_string(),
+            description: env!("CARGO_PKG_DESCRIPTION").to_string(),
+            author: env!("CARGO_PKG_AUTHORS").to_string(),
+            github: env!("CARGO_PKG_REPOSITORY").to_string(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            commands: Vec::new(),
+            default_command: None,
         }
     }
 
-    pub fn with_name(mut self, name: &'static str) -> Arg {
-        self.name = name;
+    /// Override the name of the program retrieved from the Cargo.toml
+    pub fn with_name(mut self, name: &str) -> Cli {
+        self.name = name.to_string();
         self
     }
 
-    pub fn with_short(mut self, short: char) -> Arg {
-        self.short = Some(short);
+    /// Override the binary name of the program retrieved from the Cargo.toml
+    pub fn with_bin(mut self, bin: &str) -> Cli {
+        self.bin = bin.to_string();
         self
     }
 
-    pub fn with_long(mut self, long: &'static str) -> Arg {
-        self.long = Some(long);
+    /// Override the description of the program retrieved from the Cargo.toml
+    pub fn with_description(mut self, description: &str) -> Cli {
+        self.description = description.to_string();
         self
     }
 
-    pub fn with_value_name(mut self, value_name: &'static str) -> Arg {
-        self.value_name = value_name;
+    /// Override the author of the program retrieved from the Cargo.toml
+    pub fn with_author(mut self, author: &str) -> Cli {
+        self.author = author.to_string();
         self
     }
 
-    pub fn default(mut self, default: &'static str) -> Arg {
-        self.default = Some(default.to_string());
+    /// Override the github repository of the program retrieved from the Cargo.toml
+    pub fn with_github(mut self, github: &str) -> Cli {
+        self.github = github.to_string();
         self
     }
 
-    pub fn with_help(mut self, help: &'static str) -> Arg {
-        self.help = help;
+    /// Override the version of the program retrieved from the Cargo.toml
+    pub fn with_version(mut self, version: &str) -> Cli {
+        self.version = version.to_string();
         self
     }
 
-    pub fn requires(mut self, requires: &'static str) -> Arg {
-        self.requires.push(requires);
+    /// Add a command to the cli
+    pub fn with_command(mut self, command: Command) -> Cli {
+        self.commands.push(command);
         self
+    }
+
+    /// Set the default command to be run if no command is specified, if no default command is set the help command will be run
+    pub fn with_default_command(mut self, default_command: &str) -> Cli {
+        self.default_command = Some(default_command.to_string());
+        self
+    }
+
+    /// Match the command being passed in the arguments
+    pub fn match_commands(&self) -> &Command {
+        let args: Vec<String> = env::args().collect();
+        if args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {}
+
+        if args.len() <= 1 {
+            if self.default_command.is_some() {
+                self.commands
+                    .iter()
+                    .find(|&command| command.name == *self.default_command.as_ref().unwrap())
+                    .unwrap_or_else(|| {
+                        println!(
+                            "Failed to find set default command: {}",
+                            self.default_command.as_ref().unwrap()
+                        );
+                        std::process::exit(0);
+                    })
+            } else {
+                self.help(None);
+                std::process::exit(0);
+            }
+        } else {
+            let command_name = &args[1];
+            let command = self
+                .commands
+                .iter()
+                .find(|&command| command.name == *command_name)
+                .unwrap_or_else(|| {
+                    println!("Command not found: {}", command_name);
+                    std::process::exit(0);
+                });
+
+            if args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {
+                self.help(Some(command_name));
+                std::process::exit(0);
+            }
+
+            command
+        }
+    }
+
+    pub fn help(&self, command_name: Option<&str>) {
+        cli_help(self, command_name);
+    }
+
+    pub fn version(&self) {
+        println!("{} {}", self.name, self.version);
     }
 }
 
-impl<'a> Command<'a> {
-    pub fn new(name: &'a str, description: &'a str) -> Command<'a> {
+pub struct Command {
+    pub name: String,
+    pub description: String,
+    pub options: Vec<CmdOption>,
+    pub args: Vec<Arg>,
+}
+
+impl Command {
+    pub fn new(name: &str, description: &str) -> Command {
         Command {
-            name,
-            short: None,
-            description,
-            args: None,
+            name: name.to_string(),
+            description: description.to_string(),
+            options: Vec::new(),
+            args: Vec::new(),
         }
     }
 
-    pub fn with_short(mut self, short: char) -> Command<'a> {
-        self.short = Some(short);
+    /// Add an option to the command
+    pub fn with_option(mut self, option: CmdOption) -> Command {
+        self.options.push(option);
         self
     }
 
-    /**
-     * Adds an argument to the command
-     */
-    pub fn with_arg(mut self, arg: Arg) -> Command<'a> {
-        if self.args.is_none() {
-            self.args = Some(vec![]);
-        }
-        self.args.as_mut().unwrap().push(arg);
+    /// Add an argument to the command
+    pub fn with_arg(mut self, arg: Arg) -> Command {
+        self.args.push(arg);
         self
     }
 
-    /**
-     * Adds arguments to the command
-     */
-    pub fn with_args(mut self, args: &Vec<Arg>) -> Command<'a> {
-        if self.args.is_none() {
-            self.args = Some(vec![]);
-        }
-        self.args.as_mut().unwrap().extend(args.iter().cloned());
-        self
-    }
-
-    /**
-     * Checks if the required arguments are present
-     */
     fn check_if_required_args_are_present(&self, env_args: &Vec<String>, arg: &Arg) {
-        for required in &arg.requires {
-            let required_arg = self.find_arg(required).unwrap();
-            if !env_args
-                .iter()
-                .any(|s| *s == format!("-{}", required_arg.short.unwrap()))
-                && !env_args
+        if arg.requires.is_some() {
+            for required in arg.requires.as_ref().unwrap() {
+                let required_arg = self.find_arg(required).unwrap();
+                if !env_args
                     .iter()
-                    .any(|s| *s == format!("--{}", required_arg.long.unwrap()))
-            {
-                println!(
-                    "The argument \"{}\" requires the argument \"{}\"",
-                    arg.name, required
-                );
-                std::process::exit(0);
+                    .any(|s| *s == format!("-{}", required_arg.short))
+                    && !env_args
+                        .iter()
+                        .any(|s| *s == format!("--{}", required_arg.long))
+                {
+                    println!(
+                        "The argument \"{}\" requires the argument \"{}\"",
+                        arg.name, required
+                    );
+                    std::process::exit(0);
+                }
             }
         }
     }
 
-    fn find_arg(&self, arg_name: &'static str) -> Option<&Arg> {
-        self.args
-            .as_ref()
-            .and_then(|args| args.iter().find(|&arg| arg.name == arg_name))
+    fn find_arg(&self, arg_name: &str) -> Option<&Arg> {
+        self.args.iter().find(|&arg| arg.name == arg_name)
     }
 
-    /**
-     * Get the first string value after command name without a flag
-     */
-    pub fn get_value(&self) -> ArgValue {
-        let args: Vec<String> = env::args().collect();
-        if args.len() <= 2 {
-            return ArgValue::Missing(self.name.to_string());
-        }
-        let mut value = String::new();
-        for arg in &args[2..] {
-            if arg.starts_with("-") {
-                break;
-            }
-            value.push_str(arg);
-            value.push_str(" ");
-        }
-        ArgValue::Present(value.trim().to_string())
-    }
-
-    /**
-     * Check if a flag is present
-     */
-    pub fn has(&self, arg_name: &'static str) -> bool {
+    /// Check if a flag is present in the arguments
+    pub fn has(&self, arg_name: &str) -> bool {
         self.args
-            .as_ref()
-            .and_then(|args| args.iter().find(|&arg| arg.name == arg_name))
+            .iter()
+            .find(|&arg| arg.name == arg_name)
             .map(|arg| {
                 let args: Vec<String> = env::args().collect();
-                let found = args.iter().any(|s| {
-                    *s == format!("-{}", arg.short.unwrap())
-                        || *s == format!("--{}", arg.long.unwrap())
-                });
+                let found = args
+                    .iter()
+                    .any(|s| *s == format!("-{}", arg.short) || *s == format!("--{}", arg.long));
 
                 if found {
                     self.check_if_required_args_are_present(&args, arg);
@@ -185,186 +198,238 @@ impl<'a> Command<'a> {
             .unwrap_or(false)
     }
 
-    /**
-     * Get the value of a flag
-     */
-    pub fn get_value_of(&self, arg_name: &'static str) -> ArgValue {
+    /// Get the value of an option in its location
+    pub fn get_option(&self, option_name: &str) -> Value {
+        let args: Vec<String> = env::args().collect();
+
+        for (index, option) in self.options.iter().enumerate() {
+            if args.len() <= 2 + (index) {
+                return Value::Missing(format!(
+                    "{} could not be found in its location ({})",
+                    option_name,
+                    index + 1
+                ));
+            }
+
+            let value = args[1 + (index + 1)].to_string();
+
+            if value == "--" && option.required {
+                return Value::Missing(format!(
+                    "{} is a required value and must be specified",
+                    option_name
+                ));
+            }
+        }
+
+        return Value::Missing(format!(
+            "{} is a required value and must be specified",
+            option_name
+        ));
+    }
+
+    /// Get the value of an argument
+    pub fn get_arg(&self, arg_name: &str) -> Value {
+        let args: Vec<String> = env::args().collect();
+
+        for item in args {
+            if item.starts_with("-") && !item.starts_with("--") {
+                if item.len() == 2 {}
+            }
+
+            for arg in &self.args {}
+        }
+
         self.args
-            .as_ref()
-            .and_then(|args| args.iter().find(|&arg| arg.name == arg_name))
+            .iter()
+            .find(|&arg| arg.name == arg_name)
             .and_then(|arg| {
                 let args: Vec<String> = env::args().collect();
                 let arg_index = args.iter().position(|s| {
-                    *s == format!("-{}", arg.short.unwrap())
-                        || *s == format!("--{}", arg.long.unwrap())
+                    *s == format!("-{}", arg.short) || *s == format!("--{}", arg.long)
                 });
 
                 let value = arg_index.and_then(|index| args.get(index + 1));
                 value
-                    .or_else(|| arg.default.as_ref())
+                    .or_else(|| arg.default_value.as_ref())
                     .map(|s| s.to_string())
             })
-            .map(|value| ArgValue::Present(value))
-            .unwrap_or(ArgValue::Missing(arg_name.to_string()))
+            .map(|value| Value::Present(value))
+            .unwrap_or(Value::Missing(format!("{} could not be found", arg_name)))
     }
 }
 
-impl<'a> Cli<'a> {
-    pub fn new() -> Cli<'a> {
-        Cli {
-            name: env!("CARGO_PKG_NAME").to_string(),
-            description: env!("CARGO_PKG_DESCRIPTION").to_string(),
-            author: env!("CARGO_PKG_AUTHORS").to_string(),
-            github: env!("CARGO_PKG_REPOSITORY").to_string(),
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            commands: Vec::new(),
-            default_command: None,
+pub struct CmdOption {
+    name: String,
+    value_name: String,
+    description: String,
+    required: bool,
+}
+
+impl CmdOption {
+    pub fn new(name: &str, value_name: &str, description: &str) -> CmdOption {
+        CmdOption {
+            name: name.to_string(),
+            value_name: value_name.to_string(),
+            description: description.to_string(),
+            required: true,
         }
     }
 
-    pub fn with_name(mut self, name: &'a str) -> Cli<'a> {
-        self.name = name.to_string();
+    pub fn optional(mut self) -> CmdOption {
+        self.required = false;
+        self
+    }
+}
+
+pub struct Arg {
+    pub name: String,
+    pub description: String,
+    pub short: char,
+    pub long: String,
+    pub value_name: Option<String>,
+    pub default_value: Option<String>,
+    pub requires: Option<Vec<String>>,
+    pub required: bool,
+}
+
+impl Arg {
+    pub fn new(name: &str, description: &str, long: &str, short: char) -> Arg {
+        Arg {
+            name: name.to_string(),
+            description: description.to_string(),
+            short,
+            long: long.to_string(),
+            value_name: None,
+            default_value: None,
+            requires: None,
+            required: false,
+        }
+    }
+
+    /// Set the value name of the argument, used in the help menu to show the argument takes an input
+    pub fn with_value_name(mut self, value_name: &str) -> Arg {
+        self.value_name = Some(value_name.to_string());
         self
     }
 
-    pub fn with_description(mut self, description: &'a str) -> Cli<'a> {
-        self.description = description.to_string();
+    /// If no value is provided for the argument, use the default value
+    pub fn with_default_value(mut self, default_value: &str) -> Arg {
+        self.default_value = Some(default_value.to_string());
         self
     }
 
-    pub fn with_author(mut self, author: &'a str) -> Cli<'a> {
-        self.author = author.to_string();
-        self
-    }
-
-    pub fn with_github(mut self, github: &'a str) -> Cli<'a> {
-        self.github = github.to_string();
-        self
-    }
-
-    pub fn with_version(mut self, version: &'a str) -> Cli<'a> {
-        self.version = version.to_string();
-        self
-    }
-
-    pub fn with_commands(mut self, commands: Vec<Command<'a>>) -> Cli {
-        self.commands = commands;
-        self
-    }
-
-    /**
-     * The default command to run if just the program name is called
-     * The default_command should be the name of the desired command
-     * If it is a command that should not be normally run, don't add it to cli command list, just match for name in the main function
-     *
-     * If a default command is not set, the auto generated help command will be run
-     */
-    pub fn with_default_command(mut self, default_command: &str) -> Cli<'a> {
-        self.default_command = Some(default_command.to_string());
-        self
-    }
-
-    pub fn match_commands(&self) -> &Command<'a> {
-        let args: Vec<String> = env::args().collect();
-        if args.len() <= 1 {
-            if self.default_command.is_some() {
-                self.commands
-                    .iter()
-                    .find(|&command| command.name == self.default_command.as_ref().unwrap())
-                    .unwrap_or_else(|| {
-                        println!(
-                            "Failed to find set default command: {}",
-                            self.default_command.as_ref().unwrap()
-                        );
-                        std::process::exit(0);
-                    })
-            } else {
-                self.help();
-                std::process::exit(0);
-            }
+    /// Set the argument to require another argument to be present
+    pub fn requires(mut self, requires: &str) -> Arg {
+        if self.requires.is_none() {
+            self.requires = Some(vec![requires.to_string()])
         } else {
-            let command_name = &args[1];
-            self.commands
-                .iter()
-                .find(|&command| {
-                    command.name == command_name
-                        || (command.short
-                            == Some(
-                                command_name
-                                    .replace("-", "")
-                                    .to_lowercase()
-                                    .chars()
-                                    .next()
-                                    .unwrap(),
-                            )
-                            && command_name.len() == 1)
-                })
-                .unwrap_or_else(|| {
-                    println!("Command not found: {}", command_name);
-                    std::process::exit(0);
-                })
+            self.requires.as_mut().unwrap().push(requires.to_string());
         }
+        self
     }
 
-    pub fn version(&self) {
-        println!("{} {}", self.name, self.version);
-    }
-
-    pub fn help(&self) {
-        println!("{} {}", self.name, self.version);
-        println!("{}", self.description);
-        println!("Author: {}", self.author);
-        println!("Github: {}", self.github);
-        println!();
-        println!("USAGE:");
-        println!("    {} [COMMAND] [OPTIONS]", self.name);
-        println!();
-        println!("COMMANDS:");
-        for command in &self.commands {
-            println!("    {:<12} -{}", command.name, command.short.unwrap_or(' '));
-            println!("        {}", command.description);
-
-            if let Some(args) = &command.args {
-                for arg in args {
-                    let short = arg
-                        .short
-                        .map(|s| format!("-{}", s))
-                        .unwrap_or("".to_string());
-                    let long = arg
-                        .long
-                        .map(|s| format!("--{}", s))
-                        .unwrap_or("".to_string());
-                    let value = format!("<{}>", arg.value_name);
-                    let default = arg.default.as_ref().map(|s| format!(" (default: {})", s));
-                    println!(
-                        "        {:<12} {:<12} {:<12} {:<12}{}",
-                        short,
-                        long,
-                        value,
-                        arg.help,
-                        default.unwrap_or("".to_string())
-                    );
-                }
-            }
-        }
-        println!();
+    /// Set the argument to be required
+    pub fn required(mut self) -> Arg {
+        self.required = true;
+        self
     }
 }
 
 #[derive(Debug)]
-pub enum ArgValue {
+pub enum Value {
     Missing(String),
     Present(String),
 }
 
-impl ArgValue {
+impl Value {
     pub fn throw_if_none(&self) -> String {
         match self {
-            ArgValue::Missing(name) => {
-                println!("Missing required argument: {}", name);
-                std::process::exit(0);
+            Value::Missing(message) => {
+                println!("Missing Input Value: {}", message);
+                std::process::exit(1);
             }
-            ArgValue::Present(value) => value.to_string(),
+            Value::Present(value) => value.to_string(),
         }
     }
+
+    pub fn to_option(&self) -> Option<String> {
+        match self {
+            Value::Missing(_) => None,
+            Value::Present(value) => Some(value.to_owned()),
+        }
+    }
+}
+
+fn cli_help(cli: &Cli, command_name: Option<&str>) {
+    if command_name.is_none() {
+        println!("{} {}", cli.name, cli.version);
+        println!("{}", cli.description);
+        println!("Author: {}", cli.author);
+        prints!("Github: [color:cyan]{}", cli.github);
+        println!();
+        prints!("[style:bold]USAGE:");
+        println!("    {} [COMMAND] [OPTIONS]", cli.bin);
+        println!();
+        prints!("[style:bold]COMMANDS:");
+
+        for command in &cli.commands {
+            command_help(command, 1);
+        }
+    } else {
+        let command_name: Vec<&str> = command_name.unwrap().split(":").collect();
+
+        let command = cli
+            .commands
+            .iter()
+            .find(|command| command.name == command_name[0]);
+
+        if command.is_none() {
+            cli.help(None);
+            return;
+        }
+
+        let command = command.unwrap();
+
+        command_help(command, 0)
+    }
+}
+
+fn command_help(command: &Command, indent: u8) {
+    prints!(
+        "[style:bold]{}{} - {}",
+        "    ".repeat(indent as usize),
+        command.name,
+        command.description
+    );
+    for option in &command.options {
+        println!(
+            "    {}{:<12}  {:<26}  {:>12} {}",
+            "    ".repeat((indent) as usize),
+            option.name,
+            format!("<{}>", option.value_name),
+            if option.required {
+                " (required)"
+            } else {
+                "(optional)"
+            },
+            option.description,
+        )
+    }
+    for arg in &command.args {
+        println!(
+            "    {}-{:<12} --{:<12} {:<14}{:<12}{}",
+            "    ".repeat((indent) as usize),
+            arg.short,
+            arg.long,
+            if arg.value_name.is_some() {
+                format!("<{}>", arg.value_name.as_ref().unwrap())
+            } else {
+                "".to_string()
+            },
+            if arg.required { " (required)" } else { "" },
+            arg.description,
+        );
+    }
+
+    println!();
 }
