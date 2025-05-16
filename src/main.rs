@@ -83,7 +83,7 @@ fn main() {
         )
         .with_command(
             Command::new("scan", "Scan a directory")
-                .with_option(CmdOption::new("path", "PATH", "path to a directory"))
+                .with_option(CmdOption::new("path", "PATH", "path to a directory").optional())
                 .with_arg(Arg::new(
                     "no extentions",
                     "Disable file extentions",
