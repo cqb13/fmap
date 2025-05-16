@@ -1,8 +1,8 @@
 pub mod cli;
 pub mod display;
 pub mod scan;
+pub mod styles;
 pub mod utils;
-
 pub mod system {
     pub mod config;
     pub mod local;
@@ -16,7 +16,7 @@ use crate::system::config::{
 };
 use crate::system::local::install;
 use crate::utils::get_current_directory_path;
-use cli::{Arg, Cli, Command};
+use cli::{Arg, Cli, CmdOption, Command};
 
 #[derive(Debug)]
 pub enum OS {
@@ -44,142 +44,75 @@ fn main() {
 
     let cli = Cli::new()
         .with_default_command("scan")
-        .with_commands(vec![
-            Command::new("config", "Creates a new config file").with_short('c'),
-            Command::new("version", "Displays the current version of fmap").with_short('v'),
-            Command::new("install", "Installs the files and directories"),
-            Command::new("add", "Adds a file or directory to the ignore list")
-                .with_short('a')
-                .with_arg(
-                    Arg::new()
-                        .with_name("type")
-                        .with_short('t')
-                        .with_long("type")
-                        .with_value_name("TYPE")
-                        .with_help("file (file) or directory (dir)"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("name")
-                        .with_short('n')
-                        .with_long("name")
-                        .with_value_name("NAME")
-                        .with_help("The name of the file/file ending or directory"),
-                ),
-            Command::new("remove", "Removes a file or directory to the ignore list")
-                .with_short('r')
-                .with_arg(
-                    Arg::new()
-                        .with_name("type")
-                        .with_short('t')
-                        .with_long("type")
-                        .with_value_name("TYPE")
-                        .with_help("file (file) or directory (dir)"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("name")
-                        .with_short('n')
-                        .with_long("name")
-                        .with_value_name("NAME")
-                        .with_help("The name of the file/file ending or directory"),
-                ),
-            Command::new("list", "Lists all files or directories in the ignore list")
-                .with_short('r')
-                .with_arg(
-                    Arg::new()
-                        .with_name("type")
-                        .with_short('t')
-                        .with_long("type")
-                        .with_value_name("TYPE")
-                        .with_help("file (file) or directory (dir)"),
-                ),
-            Command::new("scan", "Scans the current directory")
-                .with_short('s')
-                .with_arg(
-                    Arg::new()
-                        .with_name("endings")
-                        .with_short('e')
-                        .with_long("endings")
-                        .with_help("Shows the file endings"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("file_sizes")
-                        .with_short('f')
-                        .with_long("file-sizes")
-                        .with_help("Shows the file sizes"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("directory_sizes")
-                        .with_short('d')
-                        .with_long("directory-sizes")
-                        .with_help("Shows the directory sizes"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("file_counts_in_directories")
-                        .with_short('c')
-                        .with_long("file-counts-in-directories")
-                        .with_help("Shows the file counts in directories"),
-                ),
-            Command::new("scan-path", "Scans a specific path")
-                .with_short('p')
-                .with_arg(
-                    Arg::new()
-                        .with_name("path")
-                        .with_short('p')
-                        .with_long("path")
-                        .with_value_name("PATH")
-                        .with_help("The path to scan"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("endings")
-                        .with_short('e')
-                        .with_long("endings")
-                        .with_help("Shows the file endings"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("file_sizes")
-                        .with_short('f')
-                        .with_long("file-sizes")
-                        .with_help("Shows the file sizes"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("directory_sizes")
-                        .with_short('d')
-                        .with_long("directory-sizes")
-                        .with_help("Shows the directory sizes"),
-                )
-                .with_arg(
-                    Arg::new()
-                        .with_name("file_counts_in_directories")
-                        .with_short('c')
-                        .with_long("file-counts-in-directories")
-                        .with_help("Shows the file counts in directories"),
-                ),
-            Command::new("help", "Helps you with the commands").with_short('h'),
-        ]);
+        .with_command(Command::new("help", "Prints help information").with_option(
+            CmdOption::new("command", "COMMAND", "The command you want help with").optional(),
+        ))
+        .with_command(Command::new("version", "Prints version information"))
+        .with_command(Command::new("config", "Creates a new config file"))
+        .with_command(Command::new("install", "Installs fmap"))
+        .with_command(
+            Command::new("add", "Add a file or directory to the ignore list")
+                .with_option(CmdOption::new(
+                    "type",
+                    "TYPE",
+                    "file (file) or directory (dir)",
+                ))
+                .with_option(CmdOption::new(
+                    "name",
+                    "NAME",
+                    "The name of the file/file ending or directory",
+                )),
+        )
+        .with_command(
+            Command::new("remove", "Remove a file or directory to the ignore list")
+                .with_option(CmdOption::new(
+                    "type",
+                    "TYPE",
+                    "file (file) or directory (dir)",
+                ))
+                .with_option(CmdOption::new(
+                    "name",
+                    "NAME",
+                    "The name of the file/file ending or directory",
+                )),
+        )
+        .with_command(
+            Command::new("list", "List all files or directories in the ignore list").with_option(
+                CmdOption::new("type", "TYPE", "file (file) or directory (dir)"),
+            ),
+        )
+        .with_command(
+            Command::new("scan", "Scan a directory")
+                .with_option(CmdOption::new("path", "PATH", "path to a directory"))
+                .with_arg(Arg::new(
+                    "no extentions",
+                    "Disable file extentions",
+                    "",
+                    'x',
+                ))
+                .with_arg(Arg::new("file sizes", "Show file sizes", "", 'f'))
+                .with_arg(Arg::new("directory sizes", "Show directory sizes", "", 'd'))
+                .with_arg(Arg::new(
+                    "file count",
+                    "Show the file count in a directory",
+                    "",
+                    'c',
+                )),
+        );
 
     let command = cli.match_commands();
 
-    match command.name {
-        "config" => {
-            recreate_config_file(&os);
+    match command.name.as_str() {
+        "help" => {
+            let command = command.get_option("command").to_option();
+            cli.help(command.as_deref())
         }
-        "version" => {
-            cli.version();
-        }
-        "install" => {
-            install(&os);
-        }
+        "version" => cli.version(),
+        "config" => recreate_config_file(&os),
+        "install" => install(&os),
         "add" => {
-            let list_type = command.get_value_of("type").throw_if_none();
-            let name = command.get_value_of("name").throw_if_none();
+            let list_type = command.get_option("type").throw_if_none();
+            let name = command.get_option("name").throw_if_none();
 
             match list_type.as_str() {
                 "file" => {
@@ -194,8 +127,8 @@ fn main() {
             }
         }
         "remove" => {
-            let list_type = command.get_value_of("type").throw_if_none();
-            let name = command.get_value_of("name").throw_if_none();
+            let list_type = command.get_option("type").throw_if_none();
+            let name = command.get_option("name").throw_if_none();
 
             match list_type.as_str() {
                 "file" => {
@@ -210,7 +143,7 @@ fn main() {
             }
         }
         "list" => {
-            let list_type = command.get_value_of("type").throw_if_none();
+            let list_type = command.get_option("type").throw_if_none();
 
             match list_type.as_str() {
                 "file" => {
@@ -228,47 +161,29 @@ fn main() {
             }
         }
         "scan" => {
-            let show_endings = command.has("endings");
-            let show_file_sizes = command.has("file_sizes");
-            let show_directory_sizes = command.has("directory_sizes");
-            let show_file_counts_in_directories = command.has("file_counts_in_directories");
+            let raw_path = command.get_option("path").to_option();
+            let show_endings = command.has("no extentions");
+            let show_file_sizes = command.has("file sizes");
+            let show_dir_sizes = command.has("directory sizes");
+            let show_file_count = command.has("show_file_count");
 
-            let current_dir_path = get_current_directory_path();
-            let tree = scan(&current_dir_path, &os);
-
-            display(
-                &tree,
-                &show_endings,
-                &show_file_sizes,
-                &show_directory_sizes,
-                &show_file_counts_in_directories,
-                &os,
-            );
-        }
-        "scan-path" => {
-            let path = command.get_value_of("path").throw_if_none();
-            let show_endings = command.has("endings");
-            let show_file_sizes = command.has("file_sizes");
-            let show_directory_sizes = command.has("directory_sizes");
-            let show_file_counts_in_directories = command.has("file_counts_in_directories");
+            let path = match raw_path {
+                Some(path) => path,
+                None => get_current_directory_path(),
+            };
 
             let tree = scan(&path, &os);
 
             display(
                 &tree,
-                &show_endings,
+                &!show_endings,
                 &show_file_sizes,
-                &show_directory_sizes,
-                &show_file_counts_in_directories,
+                &show_dir_sizes,
+                &show_file_count,
                 &os,
             );
         }
-        "help" => {
-            cli.help();
-        }
-        _ => {
-            println!("Invalid command");
-        }
+        _ => cli.help(None),
     }
 }
 
